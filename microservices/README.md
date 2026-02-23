@@ -14,6 +14,7 @@ This folder contains the microservices split of the Anexi SaaS backend.
 - `prometheus`: metrics scraper
 - `grafana`: observability UI
 - `jaeger`: distributed tracing backend
+- `frontend`: nginx static UI (reverse proxy `/api/*` to `api-gateway`)
 
 ## Inter-service Communication
 
@@ -40,8 +41,14 @@ docker compose -f docker-compose.microservices.yml up -d --build
 
 Gateway endpoint remains:
 - `http://localhost:8000`
+Frontend endpoint:
+- `http://localhost:8080`
 Grafana endpoint:
 - `http://localhost:3000`
+Jaeger endpoint:
+- `http://localhost:16686`
+PostgreSQL endpoint (host):
+- `localhost:5434`
 
 Health checks:
 - `GET /health` on each service.
@@ -54,7 +61,7 @@ Health checks:
 3. Domain services start only after migrations are successful.
 4. No `--reload` in orchestrated runtime (prevents multi-process schema races).
 5. API gateway returns controlled `503/504` errors for upstream failures.
-6. Internal services stay private (no host port exposure outside gateway + grafana).
+6. Internal domain services stay private (host-exposed ports are for gateway/observability/frontend and local DB admin access).
 
 ## Startup Order
 

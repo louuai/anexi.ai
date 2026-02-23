@@ -63,7 +63,7 @@ frontend/
 ## 🚀 Installation
 
 ### Prérequis
-- Backend Anexi.ai en cours d'exécution sur `http://localhost:8000`
+- API Gateway Anexi.ai en cours d'exécution sur `http://localhost:8000`
 
 ### Étapes
 
@@ -112,7 +112,7 @@ python -m http.server 8080
 Dans `js/auth.js`, modifier l'URL de l'API si besoin:
 
 ```javascript
-const API_URL = 'http://localhost:8000';  // Changer si nécessaire
+const API_URL = '/api';  // Requêtes proxifiées par Nginx vers api-gateway
 ```
 
 ## 🎨 Personnalisation

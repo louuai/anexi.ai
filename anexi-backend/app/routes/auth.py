@@ -14,12 +14,26 @@ from sqlalchemy import text
 
 from app.database import get_db
 from app.models import User, UserProfile
-from app.schemas import SignupRequest, ProfileRequest, LoginRequest, TokenResponse
+from app.schemas import (
+    SignupRequest,
+    ProfileRequest,
+    LoginRequest,
+    TokenResponse,
+    ProfileSettingsResponse,
+    ProfileSettingsUpdateRequest,
+    ProfilePasswordUpdateRequest,
+    NotificationSettings,
+    SystemSettings,
+)
 from app.utils.security import hash_password, verify_password, create_access_token, decode_access_token
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
+
+
+def _normalize_role(role: str | None) -> str:
+    return str(role or "user").strip().lower()
 
 
 def _build_frontend_redirect_url(path: str = "/login.html") -> str:
@@ -106,7 +120,7 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     
     # Create access token
     access_token = create_access_token(
-        data={"sub": user.email, "user_id": user.id, "role": user.role}
+        data={"sub": user.email, "user_id": user.id, "role": _normalize_role(user.role)}
     )
     
     return TokenResponse(
@@ -199,9 +213,134 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
         "id": current_user.id,
         "email": current_user.email,
         "full_name": current_user.full_name,
-        "role": current_user.role,
+        "phone": current_user.phone,
+        "avatar_url": current_user.avatar_url,
+        "role": _normalize_role(current_user.role),
         "created_at": current_user.created_at
     }
+
+
+def _ensure_user_profile(db: Session, user_id: int) -> UserProfile:
+    profile = db.query(UserProfile).filter_by(user_id=user_id).first()
+    if profile:
+        return profile
+
+    profile = UserProfile(user_id=user_id, selling_type="mix")
+    db.add(profile)
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.get("/profile/settings", response_model=ProfileSettingsResponse)
+def get_profile_settings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = _ensure_user_profile(db, current_user.id)
+    return ProfileSettingsResponse(
+        user_id=current_user.id,
+        full_name=current_user.full_name,
+        email=current_user.email,
+        phone=current_user.phone,
+        avatar_url=current_user.avatar_url,
+        role=current_user.role,
+        notifications=NotificationSettings(
+            order_updates=bool(profile.notifications_order_updates),
+            risk_alerts=bool(profile.notifications_risk_alerts),
+            email_digest=bool(profile.notifications_email_digest),
+        ),
+        system=SystemSettings(
+            language=profile.system_language or "en",
+            timezone=profile.system_timezone or "UTC",
+        ),
+    )
+
+
+@router.put("/profile/settings", response_model=ProfileSettingsResponse)
+def update_profile_settings(
+    payload: ProfileSettingsUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = _ensure_user_profile(db, current_user.id)
+
+    if payload.full_name is not None:
+        current_user.full_name = payload.full_name.strip() or None
+    if payload.email is not None:
+        current_user.email = payload.email.lower().strip()
+    if payload.phone is not None:
+        current_user.phone = payload.phone.strip() or None
+    if payload.avatar_url is not None:
+        current_user.avatar_url = payload.avatar_url.strip() or None
+
+    if payload.notifications is not None:
+        profile.notifications_order_updates = bool(payload.notifications.order_updates)
+        profile.notifications_risk_alerts = bool(payload.notifications.risk_alerts)
+        profile.notifications_email_digest = bool(payload.notifications.email_digest)
+
+    if payload.system is not None:
+        profile.system_language = (payload.system.language or "en").strip()[:10]
+        profile.system_timezone = (payload.system.timezone or "UTC").strip()[:64]
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email déjà enregistré",
+        )
+
+    db.refresh(current_user)
+    db.refresh(profile)
+
+    return ProfileSettingsResponse(
+        user_id=current_user.id,
+        full_name=current_user.full_name,
+        email=current_user.email,
+        phone=current_user.phone,
+        avatar_url=current_user.avatar_url,
+        role=current_user.role,
+        notifications=NotificationSettings(
+            order_updates=bool(profile.notifications_order_updates),
+            risk_alerts=bool(profile.notifications_risk_alerts),
+            email_digest=bool(profile.notifications_email_digest),
+        ),
+        system=SystemSettings(
+            language=profile.system_language or "en",
+            timezone=profile.system_timezone or "UTC",
+        ),
+    )
+
+
+@router.put("/profile/password", response_model=dict)
+def update_profile_password(
+    payload: ProfilePasswordUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not payload.new_password or len(payload.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le nouveau mot de passe doit contenir au moins 8 caractères",
+        )
+
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mot de passe actuel incorrect",
+        )
+
+    if payload.current_password == payload.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Le nouveau mot de passe doit être différent de l'actuel",
+        )
+
+    current_user.password_hash = hash_password(payload.new_password)
+    db.commit()
+    return {"message": "Mot de passe mis à jour"}
 
 
 @router.get("/google/login")
@@ -340,7 +479,11 @@ def google_callback(code: str = Query(default=""), state: str = Query(default=""
             return RedirectResponse(url=f"{frontend_login}?oauth_error={error}")
 
         app_token = create_access_token(
-            data={"sub": user_row["email"], "user_id": int(user_row["id"]), "role": user_row["role"]}
+            data={
+                "sub": user_row["email"],
+                "user_id": int(user_row["id"]),
+                "role": _normalize_role(user_row["role"]),
+            }
         )
         query = urllib.parse.urlencode(
             {

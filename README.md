@@ -7,8 +7,9 @@ Plateforme SaaS pour automatiser les operations e-commerce.
 - `frontend/`: pages HTML/CSS/JS
 
 ## Lancement rapide
-- Backend: `uvicorn app.main:app --reload --port 8000`
-- Frontend: `python -m http.server 3000` depuis `frontend/`
+- Docker microservices: `docker compose -f docker-compose.microservices.yml up -d --build`
+- API Gateway: `http://localhost:8000`
+- Grafana: `http://localhost:3000`
 
 ## Repository
 `https://github.com/louuai/anexi.ai.git`

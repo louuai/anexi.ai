@@ -2,6 +2,8 @@ function getToken() {
   return localStorage.getItem('access_token') || localStorage.getItem('token');
 }
 
+const API_BASE = '/api';
+
 function logoutNow() {
   localStorage.removeItem('access_token');
   localStorage.removeItem('token');
@@ -11,12 +13,20 @@ function logoutNow() {
 
 function decodeJwtPayload(token) {
   try {
-    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const json = atob(payload);
+    const base64Url = token.split('.')[1] || '';
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    const json = decodeURIComponent(atob(padded).split('').map((c) => {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
     return JSON.parse(json);
   } catch (e) {
     return null;
   }
+}
+
+function normalizeRole(roleValue) {
+  return String(roleValue || '').trim().toLowerCase();
 }
 
 function ensureAdminAccess() {
@@ -25,15 +35,46 @@ function ensureAdminAccess() {
     window.location.replace('login.html');
     return null;
   }
+  return token;
+}
 
-  const payload = decodeJwtPayload(token);
-  const role = (payload?.role || '').toLowerCase();
-  if (!['admin', 'super_admin', 'founder'].includes(role)) {
-    window.location.replace('dashboard.html');
+async function verifyAdminAccessServerSide() {
+  const token = getToken();
+  if (!token) {
+    window.location.replace('login.html');
     return null;
   }
 
-  return token;
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.status === 401) {
+      logoutNow();
+      return null;
+    }
+    if (!res.ok) {
+      throw new Error('Unable to verify user role');
+    }
+
+    const me = await res.json();
+    const role = normalizeRole(me?.role);
+    if (!['admin', 'super_admin', 'founder'].includes(role)) {
+      window.location.replace('dashboard.html');
+      return null;
+    }
+
+    return token;
+  } catch (_e) {
+    const payload = decodeJwtPayload(token);
+    const role = normalizeRole(payload?.role);
+    if (!['admin', 'super_admin', 'founder'].includes(role)) {
+      window.location.replace('dashboard.html');
+      return null;
+    }
+    return token;
+  }
 }
 
 function renderOverview(data) {
@@ -61,7 +102,7 @@ function renderOverview(data) {
 async function adminFetch(path, options = {}) {
   const token = ensureAdminAccess();
   if (!token) throw new Error('No admin token');
-  const response = await fetch(`http://localhost:8000${path}`, {
+  const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -173,7 +214,7 @@ async function loadAdminOverview() {
   const token = ensureAdminAccess();
   if (!token) return;
 
-  const res = await fetch('http://localhost:8000/admin/overview', {
+  const res = await fetch(`${API_BASE}/admin/overview`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -195,7 +236,10 @@ async function loadAdminOverview() {
   renderOverview(data);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const verifiedToken = await verifyAdminAccessServerSide();
+  if (!verifiedToken) return;
+
   document.getElementById('logoutAdmin')?.addEventListener('click', logoutNow);
   document.getElementById('refreshAdmin')?.addEventListener('click', () => {
     loadAdminOverview().catch(() => {});

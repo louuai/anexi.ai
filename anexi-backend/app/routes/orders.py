@@ -6,6 +6,9 @@ from app.database import get_db
 from app.models import User, Order, Customer, Boutique
 from app.schemas import OrderCreate, OrderResponse, OrderWithDecision
 from app.routes.auth import get_current_user
+from app.workers.dispatch import enqueue_task
+from app.workers.decision_tasks import process_order_decision
+from app.workers.analytics_tasks import refresh_analytics_for_user
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -47,6 +50,9 @@ def create_order(
     db.add(new_order)
     db.commit()
     db.refresh(new_order)
+
+    enqueue_task(process_order_decision, new_order.id)
+    enqueue_task(refresh_analytics_for_user, current_user.id, "order_created")
     
     return new_order
 
@@ -154,6 +160,9 @@ def update_order_status(
     order.status = new_status
     db.commit()
     db.refresh(order)
+
+    enqueue_task(process_order_decision, order.id)
+    enqueue_task(refresh_analytics_for_user, current_user.id, "order_status_updated")
     
     return {
         "message": "Statut mis à jour",

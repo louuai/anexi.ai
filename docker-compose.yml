@@ -3,7 +3,8 @@ version: '3.8'
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    profiles: ["monolith"]
+    image: postgres:18-alpine
     container_name: anexi_postgres
     restart: unless-stopped
     environment:
@@ -20,8 +21,23 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis broker for background jobs
+  redis:
+    profiles: ["monolith"]
+    image: redis:7-alpine
+    container_name: anexi_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Backend FastAPI
   backend:
+    profiles: ["monolith"]
     build: 
       context: ./anexi-backend
       dockerfile: Dockerfile
@@ -36,15 +52,46 @@ services:
       SECRET_KEY: anexi-super-secret-key-change-in-production-2024
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./anexi-backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
+  # Celery worker for async processing
+  worker:
+    profiles: ["monolith"]
+    build:
+      context: ./anexi-backend
+      dockerfile: Dockerfile
+    container_name: anexi_worker
+    restart: unless-stopped
+    env_file:
+      - ./anexi-backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@postgres:5432/anexi
+      SECRET_KEY: anexi-super-secret-key-change-in-production-2024
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./anexi-backend:/app
+    command: celery -A app.workers.celery_app.celery_app worker --loglevel=info
+
   # Frontend Nginx Server
   frontend:
+    profiles: ["legacy"]
     image: nginx:alpine
     container_name: anexi_frontend
     restart: unless-stopped
@@ -53,8 +100,6 @@ services:
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - backend
 
 volumes:
   postgres_data:

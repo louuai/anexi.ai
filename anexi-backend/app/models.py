@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric, Text, func
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric, Text, Boolean, func
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -13,9 +13,12 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     full_name = Column(String(100))
     email = Column(String(100), unique=True, nullable=False, index=True)
+    phone = Column(String(30), nullable=True)
+    avatar_url = Column(Text, nullable=True)
     password_hash = Column(Text, nullable=False)
     role = Column(String(30), nullable=False, default="user")
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
     profile = relationship("UserProfile", back_populates="user", uselist=False)
@@ -32,6 +35,11 @@ class UserProfile(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
     selling_type = Column(String)  # fb_ads / boutique / whatsapp / mix
+    notifications_order_updates = Column(Boolean, nullable=False, default=True)
+    notifications_risk_alerts = Column(Boolean, nullable=False, default=True)
+    notifications_email_digest = Column(Boolean, nullable=False, default=False)
+    system_language = Column(String(10), nullable=False, default="en")
+    system_timezone = Column(String(64), nullable=False, default="UTC")
 
     # Relationships
     user = relationship("User", back_populates="profile")

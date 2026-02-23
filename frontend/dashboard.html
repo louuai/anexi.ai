@@ -293,6 +293,222 @@
             margin-bottom: 0.5rem;
         }
 
+        .profile-shell {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 1rem;
+        }
+
+        .profile-nav {
+            background: var(--surface-glass);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            box-shadow: var(--shadow-3d);
+            height: fit-content;
+        }
+
+        .profile-nav h3 {
+            color: var(--text-primary);
+            margin: 0 0 1rem;
+            font-size: 1.05rem;
+        }
+
+        .profile-nav-item {
+            width: 100%;
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            text-align: left;
+            border-radius: 12px;
+            padding: 0.75rem 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 0.55rem;
+            transition: var(--transition-smooth);
+        }
+
+        .profile-nav-item:hover {
+            color: var(--text-primary);
+            border-color: var(--glass-border);
+        }
+
+        .profile-nav-item.active {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.28), rgba(217, 119, 6, 0.2));
+            color: #fde68a;
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+
+        .profile-content {
+            background: var(--surface-glass);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-3d);
+            padding: 1.15rem;
+        }
+
+        .profile-panel {
+            display: none;
+        }
+
+        .profile-panel.active {
+            display: block;
+        }
+
+        .profile-panel h3 {
+            margin: 0 0 0.35rem;
+            color: var(--text-primary);
+        }
+
+        .profile-panel p {
+            margin: 0 0 1rem;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+        }
+
+        .profile-avatar-row {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .profile-avatar-xl {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--aurora-purple), var(--aurora-blue));
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .profile-avatar-xl img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .profile-avatar-actions {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .profile-btn {
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 0.5rem 0.8rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition-smooth);
+        }
+
+        .profile-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .profile-btn.primary {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #fff;
+        }
+
+        .profile-btn.danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+        }
+
+        .profile-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.8rem;
+        }
+
+        .profile-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .profile-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .profile-field label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .profile-field input,
+        .profile-field select {
+            width: 100%;
+            height: 44px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            padding: 0 12px;
+        }
+
+        .profile-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .profile-switch-row {
+            display: grid;
+            gap: 0.65rem;
+            margin-top: 0.5rem;
+        }
+
+        .profile-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.75rem 0.9rem;
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .profile-switch label {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .profile-message {
+            margin-top: 0.85rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            min-height: 1.2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .profile-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .payment-embed {
             width: 100%;
             min-height: 2200px;
@@ -1154,34 +1370,130 @@
         </section>
 
         <section class="dashboard-section" id="section-profile">
-            <div class="section-placeholder">
-                <h3>Profile</h3>
-                <p>Your account information.</p>
-                <div class="stats-grid" style="margin-top:1rem;margin-bottom:0;">
-                    <div class="stat-card">
-                        <div class="stat-content">
-                            <div class="stat-label">Full Name</div>
-                            <div class="stat-value" id="profileFullName" style="font-size:1.3rem;">-</div>
+            <div class="profile-shell">
+                <aside class="profile-nav">
+                    <h3>My Account</h3>
+                    <button class="profile-nav-item active" type="button" data-profile-tab="personal">Personal Information</button>
+                    <button class="profile-nav-item" type="button" data-profile-tab="security">Security Settings</button>
+                    <button class="profile-nav-item" type="button" data-profile-tab="notifications">Notification Settings</button>
+                    <button class="profile-nav-item" type="button" data-profile-tab="system">System Settings</button>
+                </aside>
+
+                <div class="profile-content">
+                    <div class="profile-panel active" id="profile-tab-personal">
+                        <h3>Personal Information</h3>
+                        <p>Manage your name, avatar, phone number and email for your Anexi workspace.</p>
+
+                        <div class="profile-avatar-row">
+                            <div class="profile-avatar-xl" id="profileAvatarPreview">
+                                <img id="profileAvatarImage" alt="Profile avatar preview" />
+                                <span id="profileAvatarInitials">AN</span>
+                            </div>
+                            <div class="profile-avatar-actions">
+                                <input type="file" id="profileAvatarInput" accept="image/*" hidden />
+                                <button type="button" class="profile-btn primary" id="profileAvatarUploadBtn">Upload Avatar</button>
+                                <button type="button" class="profile-btn danger" id="profileAvatarRemoveBtn">Remove Avatar</button>
+                            </div>
                         </div>
+
+                        <form id="profilePersonalForm">
+                            <div class="profile-form-grid">
+                                <div class="profile-field">
+                                    <label for="profileNameInput">Full Name</label>
+                                    <input id="profileNameInput" type="text" placeholder="Your full name" required />
+                                </div>
+                                <div class="profile-field">
+                                    <label for="profilePhoneInput">Phone Number</label>
+                                    <input id="profilePhoneInput" type="tel" placeholder="+1 555 000 0000" />
+                                </div>
+                                <div class="profile-field full">
+                                    <label for="profileEmailInput">Email</label>
+                                    <input id="profileEmailInput" type="email" placeholder="you@company.com" required />
+                                </div>
+                            </div>
+                            <div class="profile-actions">
+                                <button type="submit" class="profile-btn primary">Save Personal Information</button>
+                                <button type="button" class="profile-btn danger" id="profileDeleteBtn">Reset Profile Data</button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-content">
-                            <div class="stat-label">Email</div>
-                            <div class="stat-value" id="profileEmail" style="font-size:1.1rem;">-</div>
-                        </div>
+
+                    <div class="profile-panel" id="profile-tab-security">
+                        <h3>Security Settings</h3>
+                        <p>Update your account password.</p>
+                        <form id="profileSecurityForm">
+                            <div class="profile-form-grid">
+                                <div class="profile-field">
+                                    <label for="profileCurrentPasswordInput">Current Password</label>
+                                    <input id="profileCurrentPasswordInput" type="password" minlength="8" placeholder="Your current password" />
+                                </div>
+                                <div class="profile-field">
+                                    <label for="profilePasswordInput">New Password</label>
+                                    <input id="profilePasswordInput" type="password" minlength="8" placeholder="Minimum 8 characters" />
+                                </div>
+                                <div class="profile-field">
+                                    <label for="profilePasswordConfirmInput">Confirm Password</label>
+                                    <input id="profilePasswordConfirmInput" type="password" minlength="8" placeholder="Repeat new password" />
+                                </div>
+                            </div>
+                            <div class="profile-actions">
+                                <button type="submit" class="profile-btn primary">Update Password</button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-content">
-                            <div class="stat-label">User ID</div>
-                            <div class="stat-value" id="profileUserId" style="font-size:1.3rem;">-</div>
-                        </div>
+
+                    <div class="profile-panel" id="profile-tab-notifications">
+                        <h3>Notification Settings</h3>
+                        <p>Control which alerts your team receives.</p>
+                        <form id="profileNotificationForm">
+                            <div class="profile-switch-row">
+                                <div class="profile-switch">
+                                    <label for="notifOrderUpdates">Order Status Updates</label>
+                                    <input id="notifOrderUpdates" type="checkbox" />
+                                </div>
+                                <div class="profile-switch">
+                                    <label for="notifRiskAlerts">Risk & Trust Alerts</label>
+                                    <input id="notifRiskAlerts" type="checkbox" />
+                                </div>
+                                <div class="profile-switch">
+                                    <label for="notifEmailDigest">Daily Email Digest</label>
+                                    <input id="notifEmailDigest" type="checkbox" />
+                                </div>
+                            </div>
+                            <div class="profile-actions">
+                                <button type="submit" class="profile-btn primary">Save Notification Settings</button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-content">
-                            <div class="stat-label">Role</div>
-                            <div class="stat-value" id="profileRole" style="font-size:1.3rem;">-</div>
-                        </div>
+
+                    <div class="profile-panel" id="profile-tab-system">
+                        <h3>System Settings</h3>
+                        <p>Configure your preferred language, timezone and dashboard mode.</p>
+                        <form id="profileSystemForm">
+                            <div class="profile-form-grid">
+                                <div class="profile-field">
+                                    <label for="systemLanguage">Language</label>
+                                    <select id="systemLanguage">
+                                        <option value="en">English</option>
+                                        <option value="fr">French</option>
+                                    </select>
+                                </div>
+                                <div class="profile-field">
+                                    <label for="systemTimezone">Timezone</label>
+                                    <select id="systemTimezone">
+                                        <option value="UTC">UTC</option>
+                                        <option value="Europe/Paris">Europe/Paris</option>
+                                        <option value="America/New_York">America/New_York</option>
+                                        <option value="Africa/Casablanca">Africa/Casablanca</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="profile-actions">
+                                <button type="submit" class="profile-btn primary">Save System Settings</button>
+                            </div>
+                        </form>
                     </div>
+                    <div class="profile-message" id="profileMessage"></div>
                 </div>
             </div>
         </section>
@@ -1227,7 +1539,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="js/dashboard.js?v=20260221-3"></script>
+    <script src="js/dashboard.js?v=20260222-1"></script>
 </body>
 
 </html>

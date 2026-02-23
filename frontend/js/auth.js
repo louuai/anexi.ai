@@ -2,10 +2,8 @@
 // ANEXI.AI - AUTHENTICATION LOGIC
 // ========================================
 
-// API URL - en local, parler directement au backend FastAPI (port 8000)
-// Cela evite les erreurs 501 quand le frontend est servi par python -m http.server
-const isLocalHost = !window.location.hostname || ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const API_URL = isLocalHost ? 'http://localhost:8000' : '/api';
+// API URL - always use Nginx reverse proxy to the API Gateway
+const API_URL = '/api';
 
 // Toggle Password Visibility
 function togglePassword() {
@@ -161,6 +159,10 @@ function buildApiUrl(path) {
 
 const SUPER_ADMIN_PATH = '/super-admin.html';
 
+function normalizeRole(roleValue) {
+    return String(roleValue || '').trim().toLowerCase();
+}
+
 function decodeTokenRole(token) {
     try {
         const base64Url = token.split('.')[1];
@@ -168,14 +170,14 @@ function decodeTokenRole(token) {
         const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join('')));
-        return (payload?.role || '').toLowerCase();
+        return normalizeRole(payload?.role);
     } catch (e) {
         return '';
     }
 }
 
 function isAdminRole(roleValue) {
-    const role = (roleValue || '').toLowerCase();
+    const role = normalizeRole(roleValue);
     return role === 'admin' || role === 'super_admin' || role === 'founder';
 }
 
@@ -189,7 +191,7 @@ async function resolveCurrentUserRole(token) {
         });
         if (!response.ok) return '';
         const user = await response.json();
-        return (user?.role || '').toLowerCase();
+        return normalizeRole(user?.role);
     } catch (e) {
         return '';
     }

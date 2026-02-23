@@ -34,7 +34,7 @@ function switchDashboardSection(sectionName) {
     if (titleEl && subtitleEl) {
         const map = {
             dashboard: ['Dashboard', "Welcome back! Here's what's happening today."],
-            profile: ['Profile', 'Review your account information.'],
+            profile: ['Profile', 'Manage personal info, security, notifications and system settings.'],
             orders: ['Orders', 'Manage and track your orders in one place.'],
             customers: ['Customers', 'Review customer records and engagement status.'],
             boutiques: ['Boutiques', 'Manage connected stores and channels.'],
@@ -83,7 +83,7 @@ window.logout = function () {
 
 // Load User Profile
 async function loadUserProfile() {
-    const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+    const token = getAuthToken();
     if (!token) {
         console.log('No token found - redirecting to login');
         forceRedirectToLogin();
@@ -91,7 +91,7 @@ async function loadUserProfile() {
     }
 
     try {
-        const response = await fetch('http://localhost:8000/auth/me', {
+        const response = await fetch('/api/auth/me', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -100,7 +100,8 @@ async function loadUserProfile() {
 
         if (response.ok) {
             const user = await response.json();
-            updateUserProfile(user);
+            const settings = await fetchProfileSettingsFromApi();
+            updateUserProfile(settings || user);
         } else if (response.status === 401 || response.status === 403) {
             console.warn('Unauthorized profile request - forcing logout');
             window.logout();
@@ -110,8 +111,21 @@ async function loadUserProfile() {
             // Don't redirect on error to prevent infinite loop
             // Just show a fallback
             updateUserProfile({
+                user_id: null,
                 email: 'user@anexi.ai',
-                full_name: 'User'
+                full_name: 'User',
+                phone: '',
+                avatar_url: '',
+                role: 'user',
+                notifications: {
+                    order_updates: true,
+                    risk_alerts: true,
+                    email_digest: false,
+                },
+                system: {
+                    language: 'en',
+                    timezone: 'UTC',
+                },
             });
         }
     } catch (error) {
@@ -137,57 +151,426 @@ function parseJwt(token) {
     }
 }
 
-function updateUserProfile(user) {
-    // Update user name
-    const userNameEl = document.getElementById('userName');
-    if (userNameEl && user.full_name) {
-        userNameEl.textContent = user.full_name;
-    } else if (userNameEl && user.email) {
-        userNameEl.textContent = user.email.split('@')[0];
+let dashboardUserRecord = null;
+let profileState = null;
+
+function getInitials(text) {
+    const source = (text || '').trim();
+    if (!source) return 'AN';
+    const parts = source.split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0] || ''}${parts[parts.length - 1][0] || ''}`.toUpperCase();
+}
+
+function buildDefaultProfileState(user) {
+    return {
+        full_name: user?.full_name || '',
+        email: user?.email || '',
+        phone: '',
+        avatar_url: '',
+        password_last_updated_at: '',
+        notifications: {
+            order_updates: true,
+            risk_alerts: true,
+            email_digest: false,
+        },
+        system: {
+            language: 'en',
+            timezone: 'UTC',
+        },
+    };
+}
+
+function mergeProfileState(user, saved) {
+    const base = buildDefaultProfileState(user);
+    const safeSaved = saved && typeof saved === 'object' ? saved : {};
+    return {
+        ...base,
+        ...safeSaved,
+        notifications: {
+            ...base.notifications,
+            ...(safeSaved.notifications || {}),
+        },
+        system: {
+            ...base.system,
+            ...(safeSaved.system || {}),
+        },
+    };
+}
+
+function getAuthToken() {
+    return localStorage.getItem('access_token') || localStorage.getItem('token');
+}
+
+function authJsonHeaders() {
+    const token = getAuthToken();
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+}
+
+async function fetchProfileSettingsFromApi() {
+    const token = getAuthToken();
+    if (!token) return null;
+
+    const response = await fetch('/api/auth/profile/settings', {
+        headers: authJsonHeaders(),
+    });
+    if (!response.ok) {
+        return null;
     }
 
-    // Update user email
-    const userEmailEl = document.getElementById('userEmail');
-    if (userEmailEl && user.email) {
-        userEmailEl.textContent = user.email;
+    return response.json();
+}
+
+async function saveProfileSettingsToApi(patch) {
+    const token = getAuthToken();
+    if (!token) {
+        throw new Error('You must be logged in.');
     }
 
-    // Update user initials
-    const userInitialsEl = document.getElementById('userInitials');
-    if (userInitialsEl) {
-        if (user.full_name) {
-            const names = user.full_name.split(' ');
-            const initials = names.length >= 2
-                ? names[0][0] + names[names.length - 1][0]
-                : names[0][0] + (names[0][1] || '');
-            userInitialsEl.textContent = initials.toUpperCase();
-        } else if (user.email) {
-            userInitialsEl.textContent = user.email.substring(0, 2).toUpperCase();
+    const response = await fetch('/api/auth/profile/settings', {
+        method: 'PUT',
+        headers: authJsonHeaders(),
+        body: JSON.stringify(patch),
+    });
+
+    if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.detail || 'Failed to save profile settings');
+    }
+
+    return response.json();
+}
+
+async function updatePasswordToApi(currentPassword, newPassword) {
+    const token = getAuthToken();
+    if (!token) {
+        throw new Error('You must be logged in.');
+    }
+
+    const response = await fetch('/api/auth/profile/password', {
+        method: 'PUT',
+        headers: authJsonHeaders(),
+        body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword,
+        }),
+    });
+
+    if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.detail || 'Failed to update password');
+    }
+
+    return response.json();
+}
+
+function showProfileMessage(message, tone = 'info') {
+    const el = document.getElementById('profileMessage');
+    if (!el) return;
+    el.textContent = message;
+
+    if (tone === 'error') {
+        el.style.color = '#fca5a5';
+    } else if (tone === 'success') {
+        el.style.color = '#86efac';
+    } else {
+        el.style.color = '';
+    }
+}
+
+function updateAvatarUI() {
+    const preview = document.getElementById('profileAvatarPreview');
+    const image = document.getElementById('profileAvatarImage');
+    const initials = document.getElementById('profileAvatarInitials');
+    const sidebarAvatar = document.querySelector('.user-avatar');
+    const sidebarInitials = document.getElementById('userInitials');
+    const currentInitials = getInitials(profileState?.full_name || profileState?.email || 'AN');
+
+    if (initials) initials.textContent = currentInitials;
+    if (sidebarInitials) sidebarInitials.textContent = currentInitials;
+
+    const hasAvatar = !!(profileState?.avatar_url || '').trim();
+    if (hasAvatar) {
+        if (image) {
+            image.src = profileState.avatar_url;
+            image.style.display = 'block';
         }
+        if (initials) initials.style.display = 'none';
+        if (sidebarAvatar) {
+            sidebarAvatar.style.backgroundImage = `url('${profileState.avatar_url}')`;
+            sidebarAvatar.style.backgroundSize = 'cover';
+            sidebarAvatar.style.backgroundPosition = 'center';
+        }
+        if (sidebarInitials) sidebarInitials.style.display = 'none';
+    } else {
+        if (image) {
+            image.removeAttribute('src');
+            image.style.display = 'none';
+        }
+        if (initials) initials.style.display = '';
+        if (sidebarAvatar) {
+            sidebarAvatar.style.backgroundImage = '';
+            sidebarAvatar.style.backgroundSize = '';
+            sidebarAvatar.style.backgroundPosition = '';
+        }
+        if (sidebarInitials) sidebarInitials.style.display = '';
     }
 
-    // Update profile section details
-    const profileFullNameEl = document.getElementById('profileFullName');
-    if (profileFullNameEl) {
-        profileFullNameEl.textContent = user.full_name || '-';
+    if (preview && !hasAvatar) {
+        preview.style.backgroundImage = '';
+    }
+}
+
+function syncSidebarProfileUI() {
+    const userNameEl = document.getElementById('userName');
+    const userEmailEl = document.getElementById('userEmail');
+    if (userNameEl) {
+        userNameEl.textContent = (profileState?.full_name || '').trim() || 'User';
+    }
+    if (userEmailEl) {
+        userEmailEl.textContent = (profileState?.email || '').trim() || 'user@anexi.ai';
+    }
+    updateAvatarUI();
+}
+
+function fillProfileForms() {
+    if (!profileState) return;
+    const setVal = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value ?? '';
+    };
+    const setChecked = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = !!value;
+    };
+
+    setVal('profileNameInput', profileState.full_name);
+    setVal('profileEmailInput', profileState.email);
+    setVal('profilePhoneInput', profileState.phone);
+
+    setChecked('notifOrderUpdates', profileState.notifications?.order_updates);
+    setChecked('notifRiskAlerts', profileState.notifications?.risk_alerts);
+    setChecked('notifEmailDigest', profileState.notifications?.email_digest);
+
+    setVal('systemLanguage', profileState.system?.language || 'en');
+    setVal('systemTimezone', profileState.system?.timezone || 'UTC');
+    updateAvatarUI();
+}
+
+function activateProfileTab(tabName) {
+    document.querySelectorAll('.profile-nav-item[data-profile-tab]').forEach((item) => {
+        item.classList.toggle('active', item.dataset.profileTab === tabName);
+    });
+
+    document.querySelectorAll('.profile-panel').forEach((panel) => {
+        panel.classList.toggle('active', panel.id === `profile-tab-${tabName}`);
+    });
+}
+
+function initProfileSection() {
+    if (window.__profileSectionInitialized) return;
+    window.__profileSectionInitialized = true;
+
+    document.querySelectorAll('.profile-nav-item[data-profile-tab]').forEach((item) => {
+        item.addEventListener('click', () => {
+            activateProfileTab(item.dataset.profileTab || 'personal');
+        });
+    });
+
+    const avatarUploadBtn = document.getElementById('profileAvatarUploadBtn');
+    const avatarInput = document.getElementById('profileAvatarInput');
+    const avatarRemoveBtn = document.getElementById('profileAvatarRemoveBtn');
+
+    if (avatarUploadBtn && avatarInput) {
+        avatarUploadBtn.addEventListener('click', () => avatarInput.click());
+        avatarInput.addEventListener('change', async (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file || !profileState) return;
+            if (!file.type.startsWith('image/')) {
+                showProfileMessage('Please upload an image file for avatar.', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = async () => {
+                try {
+                    const updated = await saveProfileSettingsToApi({
+                        avatar_url: String(reader.result || ''),
+                    });
+                    updateUserProfile(updated);
+                    showProfileMessage('Avatar updated successfully.', 'success');
+                } catch (error) {
+                    showProfileMessage(error.message || 'Failed to update avatar.', 'error');
+                }
+            };
+            reader.readAsDataURL(file);
+        });
     }
 
-    const profileEmailEl = document.getElementById('profileEmail');
-    if (profileEmailEl) {
-        profileEmailEl.textContent = user.email || '-';
+    if (avatarRemoveBtn) {
+        avatarRemoveBtn.addEventListener('click', async () => {
+            if (!profileState) return;
+            try {
+                const updated = await saveProfileSettingsToApi({ avatar_url: '' });
+                updateUserProfile(updated);
+                showProfileMessage('Avatar removed.', 'success');
+            } catch (error) {
+                showProfileMessage(error.message || 'Failed to remove avatar.', 'error');
+            }
+        });
     }
 
-    const profileUserIdEl = document.getElementById('profileUserId');
-    if (profileUserIdEl) {
-        profileUserIdEl.textContent = user.id != null ? String(user.id) : '-';
+    const personalForm = document.getElementById('profilePersonalForm');
+    if (personalForm) {
+        personalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!profileState) return;
+
+            const fullName = (document.getElementById('profileNameInput')?.value || '').trim();
+            const email = (document.getElementById('profileEmailInput')?.value || '').trim();
+            const phone = (document.getElementById('profilePhoneInput')?.value || '').trim();
+
+            if (!fullName || !email) {
+                showProfileMessage('Name and email are required.', 'error');
+                return;
+            }
+
+            try {
+                const updated = await saveProfileSettingsToApi({
+                    full_name: fullName,
+                    email,
+                    phone,
+                });
+                updateUserProfile(updated);
+                showProfileMessage('Personal information saved.', 'success');
+            } catch (error) {
+                showProfileMessage(error.message || 'Failed to save personal information.', 'error');
+            }
+        });
     }
 
-    const profileRoleEl = document.getElementById('profileRole');
-    if (profileRoleEl) {
-        profileRoleEl.textContent = user.role || '-';
+    const profileDeleteBtn = document.getElementById('profileDeleteBtn');
+    if (profileDeleteBtn) {
+        profileDeleteBtn.addEventListener('click', async () => {
+            if (!dashboardUserRecord) return;
+            try {
+                const updated = await saveProfileSettingsToApi({
+                    full_name: dashboardUserRecord.full_name || '',
+                    email: dashboardUserRecord.email || '',
+                    phone: '',
+                    avatar_url: '',
+                    notifications: {
+                        order_updates: true,
+                        risk_alerts: true,
+                        email_digest: false,
+                    },
+                    system: {
+                        language: 'en',
+                        timezone: 'UTC',
+                    },
+                });
+                updateUserProfile(updated);
+                showProfileMessage('Profile data reset to default.', 'success');
+            } catch (error) {
+                showProfileMessage(error.message || 'Failed to reset profile data.', 'error');
+            }
+        });
     }
 
-    console.log('User profile updated:', user.email);
+    const securityForm = document.getElementById('profileSecurityForm');
+    if (securityForm) {
+        securityForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!profileState) return;
+            const current = document.getElementById('profileCurrentPasswordInput')?.value || '';
+            const pw = document.getElementById('profilePasswordInput')?.value || '';
+            const confirm = document.getElementById('profilePasswordConfirmInput')?.value || '';
+
+            if (current.length < 8) {
+                showProfileMessage('Current password is required.', 'error');
+                return;
+            }
+            if (pw.length < 8) {
+                showProfileMessage('Password must contain at least 8 characters.', 'error');
+                return;
+            }
+            if (pw !== confirm) {
+                showProfileMessage('Password confirmation does not match.', 'error');
+                return;
+            }
+
+            try {
+                await updatePasswordToApi(current, pw);
+                securityForm.reset();
+                showProfileMessage('Password updated.', 'success');
+            } catch (error) {
+                showProfileMessage(error.message || 'Failed to update password.', 'error');
+            }
+        });
+    }
+
+    const notifForm = document.getElementById('profileNotificationForm');
+    if (notifForm) {
+        notifForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!profileState) return;
+            try {
+                const updated = await saveProfileSettingsToApi({
+                    notifications: {
+                        order_updates: !!document.getElementById('notifOrderUpdates')?.checked,
+                        risk_alerts: !!document.getElementById('notifRiskAlerts')?.checked,
+                        email_digest: !!document.getElementById('notifEmailDigest')?.checked,
+                    },
+                });
+                updateUserProfile(updated);
+                showProfileMessage('Notification settings saved.', 'success');
+            } catch (error) {
+                showProfileMessage(error.message || 'Failed to save notification settings.', 'error');
+            }
+        });
+    }
+
+    const systemForm = document.getElementById('profileSystemForm');
+    if (systemForm) {
+        systemForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!profileState) return;
+            try {
+                const updated = await saveProfileSettingsToApi({
+                    system: {
+                        language: document.getElementById('systemLanguage')?.value || 'en',
+                        timezone: document.getElementById('systemTimezone')?.value || 'UTC',
+                    },
+                });
+                updateUserProfile(updated);
+                showProfileMessage('System settings saved.', 'success');
+            } catch (error) {
+                showProfileMessage(error.message || 'Failed to save system settings.', 'error');
+            }
+        });
+    }
+}
+
+function updateUserProfile(user) {
+    dashboardUserRecord = {
+        id: user?.id ?? user?.user_id ?? null,
+        full_name: user?.full_name || '',
+        email: user?.email || '',
+        role: user?.role || 'user',
+    };
+    profileState = mergeProfileState(dashboardUserRecord, {
+        full_name: user?.full_name,
+        email: user?.email,
+        phone: user?.phone || '',
+        avatar_url: user?.avatar_url || '',
+        notifications: user?.notifications,
+        system: user?.system,
+    });
+    syncSidebarProfileUI();
+    fillProfileForms();
+    console.log('User profile updated:', profileState?.email || user?.email);
 }
 
 // Load Dashboard Data
@@ -200,7 +583,7 @@ async function loadDashboardData() {
 
     try {
         // Fetch dashboard stats
-        const response = await fetch('http://localhost:8000/dashboard/stats', {
+        const response = await fetch('/api/dashboard/stats', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -339,7 +722,7 @@ async function resolveDashboardPaymentContext() {
     }
 
     try {
-        const boutiqueRes = await fetch('http://localhost:8000/boutiques', {
+        const boutiqueRes = await fetch('/api/boutiques', {
             headers: { Authorization: `Bearer ${token}` },
         });
         if (!boutiqueRes.ok) {
@@ -355,7 +738,7 @@ async function resolveDashboardPaymentContext() {
 
         dashboardPaymentState.boutiqueId = boutiques[0].id;
 
-        const customersRes = await fetch(`http://localhost:8000/boutiques/${dashboardPaymentState.boutiqueId}/customers`, {
+        const customersRes = await fetch(`/api/boutiques/${dashboardPaymentState.boutiqueId}/customers`, {
             headers: { Authorization: `Bearer ${token}` },
         });
         if (!customersRes.ok) {
@@ -416,7 +799,7 @@ function initDashboardPaymentSection(initialPlanKey) {
 
         const plan = DASHBOARD_PLANS[dashboardPaymentState.planKey] || DASHBOARD_PLANS.starter;
         try {
-            const res = await fetch('http://localhost:8000/payments/checkout', {
+            const res = await fetch('/api/payments/checkout', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -491,6 +874,7 @@ window.addEventListener('DOMContentLoaded', () => {
         console.error('Logout button not found!');
     }
 
+    initProfileSection();
     loadUserProfile();
     loadDashboardData();
 

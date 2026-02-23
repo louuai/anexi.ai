@@ -61,6 +61,42 @@ class ProfileResponse(BaseModel):
         from_attributes = True
 
 
+class NotificationSettings(BaseModel):
+    order_updates: bool = True
+    risk_alerts: bool = True
+    email_digest: bool = False
+
+
+class SystemSettings(BaseModel):
+    language: str = "en"
+    timezone: str = "UTC"
+
+
+class ProfileSettingsResponse(BaseModel):
+    user_id: int
+    full_name: Optional[str] = None
+    email: EmailStr
+    phone: Optional[str] = None
+    avatar_url: Optional[str] = None
+    role: str
+    notifications: NotificationSettings
+    system: SystemSettings
+
+
+class ProfileSettingsUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    avatar_url: Optional[str] = None
+    notifications: Optional[NotificationSettings] = None
+    system: Optional[SystemSettings] = None
+
+
+class ProfilePasswordUpdateRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
 # ============== BOUTIQUE SCHEMAS ==============
 
 class BoutiqueCreate(BaseModel):

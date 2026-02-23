@@ -2,12 +2,12 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr
 
 from app.database import get_db
-from app.models import User, Boutique, Customer, Order, Payment
+from app.models import User, UserProfile, Boutique, Customer, Order, Call, AdsInsight, Payment
 from app.routes.auth import get_current_user
 from app.utils.security import hash_password
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
 def _is_admin_user(user: User) -> bool:
-    return (user.role or "").lower() in {"admin", "super_admin", "founder"}
+    return (user.role or "").strip().lower() in {"admin", "super_admin", "founder"}
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
@@ -235,6 +235,47 @@ def delete_user(
     if user.id == current_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete your own account")
 
-    db.delete(user)
-    db.commit()
+    try:
+        # Explicit deletion order to satisfy FK constraints.
+        boutique_ids = [b_id for (b_id,) in db.query(Boutique.id).filter(Boutique.owner_id == user.id).all()]
+        customer_ids: list[int] = []
+        order_ids: list[int] = []
+
+        if boutique_ids:
+            customer_ids = [
+                c_id for (c_id,) in db.query(Customer.id).filter(Customer.boutique_id.in_(boutique_ids)).all()
+            ]
+            order_ids = [
+                o_id for (o_id,) in db.query(Order.id).filter(Order.boutique_id.in_(boutique_ids)).all()
+            ]
+
+        if order_ids:
+            db.query(Call).filter(Call.order_id.in_(order_ids)).delete(synchronize_session=False)
+
+        # Payments can point to user, boutique and customer.
+        payment_filters = [Payment.user_id == user.id]
+        if boutique_ids:
+            payment_filters.append(Payment.boutique_id.in_(boutique_ids))
+        if customer_ids:
+            payment_filters.append(Payment.customer_id.in_(customer_ids))
+        db.query(Payment).filter(or_(*payment_filters)).delete(synchronize_session=False)
+
+        if order_ids:
+            db.query(Order).filter(Order.id.in_(order_ids)).delete(synchronize_session=False)
+        if customer_ids:
+            db.query(Customer).filter(Customer.id.in_(customer_ids)).delete(synchronize_session=False)
+        if boutique_ids:
+            db.query(AdsInsight).filter(AdsInsight.boutique_id.in_(boutique_ids)).delete(synchronize_session=False)
+            db.query(Boutique).filter(Boutique.id.in_(boutique_ids)).delete(synchronize_session=False)
+
+        db.query(UserProfile).filter(UserProfile.user_id == user.id).delete(synchronize_session=False)
+        db.delete(user)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete this user because related data still exists",
+        )
+
     return {"message": "User deleted"}

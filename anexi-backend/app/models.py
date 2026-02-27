@@ -11,6 +11,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
     full_name = Column(String(100))
     email = Column(String(100), unique=True, nullable=False, index=True)
     phone = Column(String(30), nullable=True)
@@ -33,6 +34,7 @@ class UserProfile(Base):
     __tablename__ = "user_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
     selling_type = Column(String)  # fb_ads / boutique / whatsapp / mix
     notifications_order_updates = Column(Boolean, nullable=False, default=True)
@@ -52,6 +54,7 @@ class Boutique(Base):
     __tablename__ = "boutiques"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
     name = Column(String(100), nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
@@ -71,6 +74,7 @@ class Customer(Base):
     __tablename__ = "customers"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
     full_name = Column(String(100))
     phone = Column(String(20), index=True)
     email = Column(String(100))
@@ -90,6 +94,7 @@ class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
     boutique_id = Column(Integer, ForeignKey("boutiques.id"), nullable=False)
     product_name = Column(String(100))
@@ -110,6 +115,7 @@ class Call(Base):
     __tablename__ = "calls"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
     agent_id = Column(Integer)  # Future: AI agent identifier
     audio_url = Column(Text)
@@ -129,6 +135,7 @@ class AIDecision(Base):
     __tablename__ = "ai_decisions"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
     source_type = Column(String(20))  # order / call / behavior
     source_id = Column(Integer, nullable=False)
     score = Column(Numeric(5, 2), nullable=False)  # Trust/risk score
@@ -147,6 +154,7 @@ class AdsInsight(Base):
     __tablename__ = "ads_insights"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
     boutique_id = Column(Integer, ForeignKey("boutiques.id"), nullable=False)
     source = Column(String(20))  # facebook / google / tiktok
     insight = Column(Text)
@@ -164,6 +172,7 @@ class Payment(Base):
     __tablename__ = "payments"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     boutique_id = Column(Integer, ForeignKey("boutiques.id"), nullable=False, index=True)
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False, index=True)

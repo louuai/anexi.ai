@@ -47,6 +47,13 @@ function switchDashboardSection(sectionName) {
         titleEl.textContent = title;
         subtitleEl.textContent = subtitle;
     }
+
+    if (sectionName === 'trust') {
+        loadTrustSection();
+    }
+    if (sectionName === 'analytics') {
+        loadAnalyticsSection();
+    }
 }
 
 // Guard immediate access before the rest of the dashboard logic runs.
@@ -592,9 +599,961 @@ async function loadDashboardData() {
         if (response.ok) {
             const data = await response.json();
             updateDashboardStats(data);
+            await loadDashboardCharts();
+            await loadDashboardTrustLinkage();
         }
     } catch (error) {
         console.error('Error loading dashboard data:', error);
+    }
+}
+
+let trustSectionLoaded = false;
+let trustSectionLoading = false;
+const TRUST_PAGE_SIZE = 25;
+const trustState = {
+    page: 0,
+    activePane: 'overview',
+    filters: {
+        segment: '',
+        campaign_id: '',
+        score_range: '',
+        sort: 'date_desc',
+    },
+    expandedInteractionId: '',
+    summary: null,
+    timeline: null,
+    charts: {
+        scoreTrend: null,
+        riskTrend: null,
+        campaignScore: null,
+        campaignRisk: null,
+    },
+};
+
+let dashboardRevenueChart = null;
+let dashboardOrderStatusChart = null;
+let analyticsSectionLoaded = false;
+let analyticsSectionLoading = false;
+const analyticsState = {
+    selectedCampaign: '',
+    charts: {
+        campaignScore: null,
+        campaignRisk: null,
+    },
+};
+
+function trustHeaders() {
+    const token = getAuthToken();
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
+function formatDateTime(value) {
+    if (!value) return '-';
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return '-';
+    return dt.toLocaleString();
+}
+
+function metricCard(label, value) {
+    return `
+        <div style="border:1px solid var(--glass-border);border-radius:12px;padding:.7rem .8rem;background:rgba(255,255,255,.04);">
+            <div style="font-size:.78rem;color:var(--text-muted);">${escapeHtml(label)}</div>
+            <div style="font-size:1.15rem;font-weight:700;color:var(--text-primary);margin-top:.2rem;">${escapeHtml(value)}</div>
+        </div>
+    `;
+}
+
+function segmentBadge(segment) {
+    const map = {
+        HIGH_TRUST: '#22c55e',
+        STABLE: '#3b82f6',
+        RISK: '#f59e0b',
+        HIGH_RISK: '#ef4444',
+    };
+    const color = map[segment] || '#9ca3af';
+    return `<span style="display:inline-block;border:1px solid ${color};color:${color};padding:.2rem .45rem;border-radius:999px;font-size:.78rem;font-weight:700;">${escapeHtml(segment)}</span>`;
+}
+
+function renderTrustShell() {
+    const section = document.getElementById('section-trust');
+    if (!section) return;
+
+    section.innerHTML = `
+        <div class="section-placeholder trust-layer-shell">
+            <div class="trust-layer-head">
+                <h3>Trust Layer</h3>
+                <p id="trustStatusLine">Loading trust data...</p>
+            </div>
+
+            <div class="trust-switchbar">
+                <button type="button" class="trust-tab-btn ${trustState.activePane === 'overview' ? 'active' : ''}" data-trust-pane="overview">Overview</button>
+                <button type="button" class="trust-tab-btn ${trustState.activePane === 'campaigns' ? 'active' : ''}" data-trust-pane="campaigns">Campaigns</button>
+                <button type="button" class="trust-tab-btn ${trustState.activePane === 'interactions' ? 'active' : ''}" data-trust-pane="interactions">Interactions</button>
+                <button type="button" class="trust-tab-btn ${trustState.activePane === 'analysis' ? 'active' : ''}" data-trust-pane="analysis">Analysis</button>
+            </div>
+
+            <div id="trustPane-overview" class="trust-pane ${trustState.activePane === 'overview' ? 'active' : ''}">
+                <div id="trustSummaryGrid" class="trust-kpi-grid"></div>
+                <div class="trust-card-block">
+                    <h4>Segment Distribution</h4>
+                    <div id="trustSegments" class="trust-chip-list"></div>
+                </div>
+            </div>
+
+            <div id="trustPane-campaigns" class="trust-pane ${trustState.activePane === 'campaigns' ? 'active' : ''}">
+                <div class="trust-card-block">
+                    <h4>Campaign Performance</h4>
+                    <div class="trust-table-wrap">
+                        <table class="trust-table trust-table-campaigns">
+                            <thead>
+                                <tr>
+                                    <th>campaign_id</th>
+                                    <th>total_interactions</th>
+                                    <th>avg_score</th>
+                                    <th>high_risk_rate</th>
+                                    <th>dominant_segment</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trustCampaignRows"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="trustPane-interactions" class="trust-pane ${trustState.activePane === 'interactions' ? 'active' : ''}">
+                <div class="trust-card-block">
+                    <h4>Recent / All Trust Interactions</h4>
+                    <div class="trust-filter-row">
+                        <select id="trustFilterSegment" class="trust-select">
+                            <option value="">All segments</option>
+                            <option value="HIGH_TRUST">HIGH_TRUST</option>
+                            <option value="STABLE">STABLE</option>
+                            <option value="RISK">RISK</option>
+                            <option value="HIGH_RISK">HIGH_RISK</option>
+                        </select>
+                        <select id="trustFilterCampaign" class="trust-select">
+                            <option value="">All campaigns</option>
+                        </select>
+                        <select id="trustFilterScore" class="trust-select">
+                            <option value="">All scores</option>
+                            <option value="0-39">0-39</option>
+                            <option value="40-59">40-59</option>
+                            <option value="60-79">60-79</option>
+                            <option value="80-100">80-100</option>
+                        </select>
+                        <select id="trustSort" class="trust-select">
+                            <option value="date_desc">Date desc</option>
+                            <option value="date_asc">Date asc</option>
+                            <option value="score_desc">Score desc</option>
+                            <option value="score_asc">Score asc</option>
+                        </select>
+                    </div>
+                    <div class="trust-table-wrap">
+                        <table class="trust-table trust-table-interactions">
+                            <thead>
+                                <tr>
+                                    <th>order_id</th>
+                                    <th>client_name</th>
+                                    <th>product_name</th>
+                                    <th>campaign_id</th>
+                                    <th>confirmation_status</th>
+                                    <th>call_duration</th>
+                                    <th>hesitation_score</th>
+                                    <th>interaction_score</th>
+                                    <th>segment</th>
+                                    <th>recommended_action</th>
+                                    <th>created_at</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trustInteractionsRows"></tbody>
+                        </table>
+                    </div>
+                    <div class="trust-pager">
+                        <span id="trustPagerInfo"></span>
+                        <div class="trust-pager-actions">
+                            <button id="trustPrevPage" type="button" class="profile-btn">Prev</button>
+                            <button id="trustNextPage" type="button" class="profile-btn">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="trustPane-analysis" class="trust-pane ${trustState.activePane === 'analysis' ? 'active' : ''}">
+                <div class="trust-card-block">
+                    <h4>Trust Score Trend (Last 14 Days)</h4>
+                    <div style="min-height:240px;">
+                        <canvas id="trustScoreTrendChart"></canvas>
+                    </div>
+                </div>
+                <div class="trust-card-block">
+                    <h4>High Risk vs Total Interactions (Last 14 Days)</h4>
+                    <div style="min-height:240px;">
+                        <canvas id="trustRiskTrendChart"></canvas>
+                    </div>
+                </div>
+                <div class="trust-card-block">
+                    <h4>Campaign Avg Score</h4>
+                    <div style="min-height:240px;">
+                        <canvas id="trustCampaignScoreChart"></canvas>
+                    </div>
+                </div>
+                <div class="trust-card-block">
+                    <h4>Campaign High Risk Rate</h4>
+                    <div style="min-height:240px;">
+                        <canvas id="trustCampaignRiskChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function switchTrustPane(pane) {
+    trustState.activePane = pane || 'overview';
+    document.querySelectorAll('.trust-tab-btn[data-trust-pane]').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.trustPane === trustState.activePane);
+    });
+    document.querySelectorAll('.trust-pane').forEach((paneEl) => {
+        paneEl.classList.toggle('active', paneEl.id === `trustPane-${trustState.activePane}`);
+    });
+
+    // Chart.js can render blank when initialized inside display:none containers.
+    // Repaint charts after Analysis tab becomes visible.
+    if (trustState.activePane === 'analysis') {
+        setTimeout(() => {
+            if (trustState.timeline) {
+                renderTrustTimelineCharts(trustState.timeline);
+            }
+            if (trustState.summary) {
+                renderTrustCampaignCharts(trustState.summary);
+            }
+        }, 0);
+    }
+}
+
+function parseScoreRange(rangeValue) {
+    if (!rangeValue) return { score_min: null, score_max: null };
+    const parts = String(rangeValue).split('-');
+    if (parts.length !== 2) return { score_min: null, score_max: null };
+    const scoreMin = Number(parts[0]);
+    const scoreMax = Number(parts[1]);
+    if (Number.isNaN(scoreMin) || Number.isNaN(scoreMax)) return { score_min: null, score_max: null };
+    return { score_min: scoreMin, score_max: scoreMax };
+}
+
+function syncTrustFilterControls() {
+    const segmentEl = document.getElementById('trustFilterSegment');
+    const campaignEl = document.getElementById('trustFilterCampaign');
+    const scoreEl = document.getElementById('trustFilterScore');
+    const sortEl = document.getElementById('trustSort');
+    if (segmentEl) segmentEl.value = trustState.filters.segment || '';
+    if (campaignEl) campaignEl.value = trustState.filters.campaign_id || '';
+    if (scoreEl) scoreEl.value = trustState.filters.score_range || '';
+    if (sortEl) sortEl.value = trustState.filters.sort || 'date_desc';
+}
+
+function bindTrustEvents() {
+    const trustTabButtons = document.querySelectorAll('.trust-tab-btn[data-trust-pane]');
+    const segmentEl = document.getElementById('trustFilterSegment');
+    const campaignEl = document.getElementById('trustFilterCampaign');
+    const scoreEl = document.getElementById('trustFilterScore');
+    const sortEl = document.getElementById('trustSort');
+    const prevBtn = document.getElementById('trustPrevPage');
+    const nextBtn = document.getElementById('trustNextPage');
+    const interactionsRows = document.getElementById('trustInteractionsRows');
+
+    trustTabButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            switchTrustPane(btn.dataset.trustPane || 'overview');
+        });
+    });
+
+    if (segmentEl) {
+        segmentEl.addEventListener('change', () => {
+            trustState.filters.segment = segmentEl.value || '';
+            trustState.page = 0;
+            refreshTrustInteractions();
+        });
+    }
+    if (campaignEl) {
+        campaignEl.addEventListener('change', () => {
+            trustState.filters.campaign_id = campaignEl.value || '';
+            trustState.page = 0;
+            refreshTrustInteractions();
+        });
+    }
+    if (scoreEl) {
+        scoreEl.addEventListener('change', () => {
+            trustState.filters.score_range = scoreEl.value || '';
+            trustState.page = 0;
+            refreshTrustInteractions();
+        });
+    }
+    if (sortEl) {
+        sortEl.addEventListener('change', () => {
+            trustState.filters.sort = sortEl.value || 'date_desc';
+            trustState.page = 0;
+            refreshTrustInteractions();
+        });
+    }
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (trustState.page <= 0) return;
+            trustState.page -= 1;
+            refreshTrustInteractions();
+        });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            trustState.page += 1;
+            refreshTrustInteractions();
+        });
+    }
+    if (interactionsRows) {
+        interactionsRows.addEventListener('click', (event) => {
+            const row = event.target.closest('tr[data-interaction-id]');
+            if (!row) return;
+            const id = row.dataset.interactionId || '';
+            trustState.expandedInteractionId = trustState.expandedInteractionId === id ? '' : id;
+            document.querySelectorAll('tr[data-detail-for]').forEach((detail) => {
+                detail.style.display = detail.dataset.detailFor === trustState.expandedInteractionId ? '' : 'none';
+            });
+        });
+    }
+}
+
+function applyCampaignFilterFromRow(campaignId) {
+    trustState.filters.campaign_id = campaignId || '';
+    trustState.page = 0;
+    syncTrustFilterControls();
+    switchTrustPane('interactions');
+    refreshTrustInteractions();
+}
+
+function renderCampaignRows(summary) {
+    const rowsEl = document.getElementById('trustCampaignRows');
+    if (!rowsEl) return;
+    const rows = Array.isArray(summary?.by_campaign) ? summary.by_campaign : [];
+    if (!rows.length) {
+        rowsEl.innerHTML = `<tr><td colspan="5" style="padding:.55rem;color:var(--text-muted);">No campaign data yet.</td></tr>`;
+        return;
+    }
+    rowsEl.innerHTML = rows.map((row) => `
+        <tr data-campaign-id="${escapeHtml(row.campaign_id)}" style="border-bottom:1px solid var(--glass-border);cursor:pointer;">
+            <td style="padding:.5rem;color:var(--text-primary);">${escapeHtml(row.campaign_id)}</td>
+            <td style="padding:.5rem;color:var(--text-secondary);">${escapeHtml(row.total_interactions)}</td>
+            <td style="padding:.5rem;color:var(--text-secondary);">${escapeHtml(row.avg_interaction_score)}</td>
+            <td style="padding:.5rem;color:var(--text-secondary);">${escapeHtml(row.high_risk_rate)}%</td>
+            <td style="padding:.5rem;color:var(--text-secondary);">${segmentBadge(row.dominant_segment)}</td>
+        </tr>
+    `).join('');
+
+    rowsEl.querySelectorAll('tr[data-campaign-id]').forEach((tr) => {
+        tr.addEventListener('click', () => {
+            applyCampaignFilterFromRow(tr.dataset.campaignId || '');
+        });
+    });
+}
+
+function renderSummary(summary) {
+    trustState.summary = summary;
+    const statusLine = document.getElementById('trustStatusLine');
+    const summaryGrid = document.getElementById('trustSummaryGrid');
+    const segmentsEl = document.getElementById('trustSegments');
+    const campaignFilterEl = document.getElementById('trustFilterCampaign');
+
+    if (summaryGrid) {
+        summaryGrid.innerHTML = [
+            metricCard('Total interactions', summary.total_interactions ?? 0),
+            metricCard('Avg score', summary.avg_interaction_score ?? 0),
+            metricCard('High risk rate', `${summary.high_risk_rate ?? 0}%`),
+            metricCard('HIGH_RISK count', summary.high_risk_count ?? 0),
+            metricCard('HIGH_TRUST count', summary.high_trust_count ?? 0),
+            metricCard('Last interaction', formatDateTime(summary.last_interaction_at)),
+        ].join('');
+    }
+    if (segmentsEl) {
+        const segments = Array.isArray(summary.segments) ? summary.segments : [];
+        segmentsEl.innerHTML = segments.length
+            ? segments.map((s) => `<span style="border:1px solid var(--glass-border);padding:.35rem .55rem;border-radius:10px;background:rgba(255,255,255,.04);font-size:.82rem;color:var(--text-secondary);">${escapeHtml(s.segment)}: <strong style="color:var(--text-primary);">${escapeHtml(s.total)}</strong> (${escapeHtml(s.percentage)}%)</span>`).join('')
+            : `<span style="color:var(--text-muted);font-size:.9rem;">No segment data yet.</span>`;
+    }
+    renderCampaignRows(summary);
+    renderTrustCampaignCharts(summary);
+
+    if (campaignFilterEl) {
+        const previousValue = trustState.filters.campaign_id || '';
+        const campaignRows = Array.isArray(summary.by_campaign) ? summary.by_campaign : [];
+        campaignFilterEl.innerHTML = `<option value="">All campaigns</option>${campaignRows.map((row) => `<option value="${escapeHtml(row.campaign_id)}">${escapeHtml(row.campaign_id)}</option>`).join('')}`;
+        trustState.filters.campaign_id = previousValue;
+    }
+
+    if (statusLine) {
+        statusLine.textContent = 'Trust metrics loaded.';
+    }
+    syncTrustFilterControls();
+}
+
+function renderInteractionRows(pageData) {
+    const rowsEl = document.getElementById('trustInteractionsRows');
+    const pagerInfo = document.getElementById('trustPagerInfo');
+    const prevBtn = document.getElementById('trustPrevPage');
+    const nextBtn = document.getElementById('trustNextPage');
+    if (!rowsEl || !pagerInfo) return;
+
+    const items = Array.isArray(pageData?.items) ? pageData.items : [];
+    const total = Number(pageData?.total || 0);
+    const offset = Number(pageData?.offset || 0);
+    const hasNext = !!pageData?.has_next;
+    const start = total === 0 ? 0 : offset + 1;
+    const end = offset + items.length;
+    pagerInfo.textContent = `Showing ${start}-${end} of ${total}`;
+    if (prevBtn) prevBtn.disabled = trustState.page <= 0;
+    if (nextBtn) nextBtn.disabled = !hasNext;
+
+    if (!items.length) {
+        rowsEl.innerHTML = `<tr><td colspan="11" style="padding:.7rem;color:var(--text-muted);">No trust evaluations yet. Run /internal/trust/evaluate to start.</td></tr>`;
+        return;
+    }
+
+    rowsEl.innerHTML = items.map((row) => {
+        const rowId = escapeHtml(row.id);
+        const isExpanded = trustState.expandedInteractionId === row.id;
+        return `
+            <tr data-interaction-id="${rowId}" style="border-bottom:1px solid var(--glass-border);cursor:pointer;">
+                <td style="padding:.45rem;color:var(--text-primary);">${escapeHtml(row.order_id)}</td>
+                <td style="padding:.45rem;color:var(--text-secondary);">${escapeHtml(row.client_name || '-')}</td>
+                <td style="padding:.45rem;color:var(--text-secondary);">${escapeHtml(row.product_name || '-')}</td>
+                <td style="padding:.45rem;color:var(--text-secondary);">${escapeHtml(row.campaign_id || '-')}</td>
+                <td style="padding:.45rem;color:var(--text-secondary);">${escapeHtml(row.confirmation_status)}</td>
+                <td style="padding:.45rem;color:var(--text-secondary);">${escapeHtml(row.call_duration)}</td>
+                <td style="padding:.45rem;color:var(--text-secondary);">${escapeHtml(row.hesitation_score)}</td>
+                <td style="padding:.45rem;color:var(--text-secondary);">${escapeHtml(row.interaction_score)}</td>
+                <td style="padding:.45rem;color:var(--text-secondary);">${segmentBadge(row.segment)}</td>
+                <td style="padding:.45rem;color:var(--text-secondary);">${escapeHtml(row.recommended_action)}</td>
+                <td style="padding:.45rem;color:var(--text-secondary);">${escapeHtml(formatDateTime(row.created_at))}</td>
+            </tr>
+            <tr data-detail-for="${rowId}" style="display:${isExpanded ? '' : 'none'};background:rgba(255,255,255,.02);">
+                <td colspan="11" style="padding:.6rem;border-bottom:1px solid var(--glass-border);">
+                    <div style="color:var(--text-primary);font-weight:600;margin-bottom:.35rem;">Interaction Detail</div>
+                    <div style="font-size:.82rem;color:var(--text-secondary);line-height:1.5;">
+                        Score breakdown:
+                        confirmation=${escapeHtml(row.score_breakdown?.confirmation_component ?? 0)},
+                        duration=${escapeHtml(row.score_breakdown?.duration_component ?? 0)},
+                        hesitation=${escapeHtml(row.score_breakdown?.hesitation_component ?? 0)}.
+                        Segment=${escapeHtml(row.segment)}.
+                        Recommended action=${escapeHtml(row.recommended_action)}.
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function destroyTrustCharts() {
+    if (trustState.charts.scoreTrend) {
+        trustState.charts.scoreTrend.destroy();
+        trustState.charts.scoreTrend = null;
+    }
+    if (trustState.charts.riskTrend) {
+        trustState.charts.riskTrend.destroy();
+        trustState.charts.riskTrend = null;
+    }
+    if (trustState.charts.campaignScore) {
+        trustState.charts.campaignScore.destroy();
+        trustState.charts.campaignScore = null;
+    }
+    if (trustState.charts.campaignRisk) {
+        trustState.charts.campaignRisk.destroy();
+        trustState.charts.campaignRisk = null;
+    }
+}
+
+function renderTrustCampaignCharts(summary) {
+    if (typeof Chart === 'undefined') return;
+    const scoreCanvas = document.getElementById('trustCampaignScoreChart');
+    const riskCanvas = document.getElementById('trustCampaignRiskChart');
+    if (!scoreCanvas || !riskCanvas) return;
+
+    const campaigns = Array.isArray(summary?.by_campaign) ? summary.by_campaign : [];
+    const labels = campaigns.map((row) => row.campaign_id);
+    const scores = campaigns.map((row) => Number(row.avg_interaction_score || 0));
+    const risks = campaigns.map((row) => Number(row.high_risk_rate || 0));
+
+    if (trustState.charts.campaignScore) trustState.charts.campaignScore.destroy();
+    trustState.charts.campaignScore = new Chart(scoreCanvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [{
+                label: 'Avg Score',
+                data: scores,
+                backgroundColor: 'rgba(99, 102, 241, 0.45)',
+                borderColor: 'rgba(99, 102, 241, 0.9)',
+                borderWidth: 1,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8' } } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } },
+                y: { min: 0, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } },
+            },
+        },
+    });
+
+    if (trustState.charts.campaignRisk) trustState.charts.campaignRisk.destroy();
+    trustState.charts.campaignRisk = new Chart(riskCanvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: 'High Risk Rate %',
+                data: risks,
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.18)',
+                fill: true,
+                tension: 0.35,
+                pointRadius: 3,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8' } } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } },
+                y: { min: 0, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } },
+            },
+        },
+    });
+}
+
+function renderTrustTimelineCharts(timeline) {
+    if (typeof Chart === 'undefined') return;
+    const scoreCanvas = document.getElementById('trustScoreTrendChart');
+    const riskCanvas = document.getElementById('trustRiskTrendChart');
+    if (!scoreCanvas || !riskCanvas) return;
+
+    destroyTrustCharts();
+
+    trustState.charts.scoreTrend = new Chart(scoreCanvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: timeline.labels || [],
+            datasets: [
+                {
+                    label: 'Avg Interaction Score',
+                    data: timeline.avg_interaction_score || [],
+                    borderColor: '#7c3aed',
+                    backgroundColor: 'rgba(124, 58, 237, 0.15)',
+                    tension: 0.35,
+                    fill: true,
+                    pointRadius: 3,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8' } } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.15)' } },
+                y: { min: 0, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.15)' } },
+            },
+        },
+    });
+
+    trustState.charts.riskTrend = new Chart(riskCanvas.getContext('2d'), {
+        data: {
+            labels: timeline.labels || [],
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Total Interactions',
+                    data: timeline.total_interactions || [],
+                    backgroundColor: 'rgba(59, 130, 246, 0.35)',
+                    borderColor: 'rgba(59, 130, 246, 0.8)',
+                    borderWidth: 1,
+                },
+                {
+                    type: 'line',
+                    label: 'High Risk Count',
+                    data: timeline.high_risk_count || [],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                    tension: 0.35,
+                    pointRadius: 3,
+                    yAxisID: 'y',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8' } } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.15)' } },
+                y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.15)' } },
+            },
+        },
+    });
+}
+
+async function refreshTrustSummary() {
+    const response = await fetch('/api/trust/metrics/summary', { headers: trustHeaders() });
+    if (!response.ok) throw new Error(`Trust summary API error (${response.status})`);
+    const summary = await response.json();
+    renderSummary(summary);
+}
+
+async function refreshTrustTimeline() {
+    const response = await fetch('/api/trust/metrics/timeline?days=14', { headers: trustHeaders() });
+    if (!response.ok) throw new Error(`Trust timeline API error (${response.status})`);
+    const timeline = await response.json();
+    trustState.timeline = timeline;
+    renderTrustTimelineCharts(timeline);
+}
+
+async function refreshTrustInteractions() {
+    const statusLine = document.getElementById('trustStatusLine');
+    const { score_min, score_max } = parseScoreRange(trustState.filters.score_range);
+    const params = new URLSearchParams();
+    params.set('limit', String(TRUST_PAGE_SIZE));
+    params.set('offset', String(trustState.page * TRUST_PAGE_SIZE));
+    params.set('sort', trustState.filters.sort || 'date_desc');
+    if (trustState.filters.segment) params.set('segment', trustState.filters.segment);
+    if (trustState.filters.campaign_id) params.set('campaign_id', trustState.filters.campaign_id);
+    if (score_min !== null) params.set('score_min', String(score_min));
+    if (score_max !== null) params.set('score_max', String(score_max));
+
+    const response = await fetch(`/api/trust/interactions?${params.toString()}`, { headers: trustHeaders() });
+    if (!response.ok) throw new Error(`Trust interactions API error (${response.status})`);
+    const pageData = await response.json();
+
+    if ((pageData.total || 0) > 0 && pageData.items.length === 0 && trustState.page > 0) {
+        trustState.page = Math.max(0, trustState.page - 1);
+        return refreshTrustInteractions();
+    }
+
+    renderInteractionRows(pageData);
+    if (statusLine) {
+        statusLine.textContent = 'Trust metrics loaded.';
+    }
+}
+
+async function loadTrustSection() {
+    if (!trustSectionLoaded) {
+        renderTrustShell();
+        bindTrustEvents();
+        switchTrustPane(trustState.activePane || 'overview');
+        trustSectionLoaded = true;
+    }
+    if (trustSectionLoading) return;
+
+    const statusLine = document.getElementById('trustStatusLine');
+    trustSectionLoading = true;
+    if (statusLine) statusLine.textContent = 'Loading trust data...';
+    try {
+        await refreshTrustSummary();
+        await refreshTrustInteractions();
+        await refreshTrustTimeline();
+    } catch (error) {
+        console.error('Failed to load trust section:', error);
+        if (statusLine) {
+            statusLine.textContent = 'Unable to load trust metrics. Verify trust-service/api-gateway and your token.';
+        }
+    } finally {
+        trustSectionLoading = false;
+    }
+}
+
+function destroyAnalyticsCharts() {
+    if (analyticsState.charts.campaignScore) {
+        analyticsState.charts.campaignScore.destroy();
+        analyticsState.charts.campaignScore = null;
+    }
+    if (analyticsState.charts.campaignRisk) {
+        analyticsState.charts.campaignRisk.destroy();
+        analyticsState.charts.campaignRisk = null;
+    }
+}
+
+function renderAnalyticsShell() {
+    const section = document.getElementById('section-analytics');
+    if (!section) return;
+    section.innerHTML = `
+        <div class="section-placeholder trust-layer-shell">
+            <h3>Analytics - Campaign Intelligence</h3>
+            <p id="analyticsStatusLine">Loading analytics...</p>
+
+            <div id="analyticsKpiGrid" class="trust-kpi-grid" style="margin-top:1rem;"></div>
+
+            <div class="trust-card-block">
+                <h4>Campaign Performance Curves</h4>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;">
+                    <div style="min-height:240px;"><canvas id="analyticsCampaignScoreChart"></canvas></div>
+                    <div style="min-height:240px;"><canvas id="analyticsCampaignRiskChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="trust-card-block">
+                <h4>Campaign Table</h4>
+                <div class="trust-table-wrap">
+                    <table class="trust-table">
+                        <thead>
+                            <tr>
+                                <th>campaign_id</th>
+                                <th>total_interactions</th>
+                                <th>avg_score</th>
+                                <th>high_risk_rate</th>
+                                <th>dominant_segment</th>
+                                <th>focus</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analyticsCampaignRows"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="trust-card-block">
+                <h4>Selected Campaign Interactions</h4>
+                <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.75rem;">
+                    <label style="font-size:.82rem;color:var(--text-muted);align-self:center;">Campaign</label>
+                    <select id="analyticsCampaignSelect" class="trust-select"><option value="">All campaigns</option></select>
+                </div>
+                <div class="trust-table-wrap">
+                    <table class="trust-table">
+                        <thead>
+                            <tr>
+                                <th>created_at</th>
+                                <th>order_id</th>
+                                <th>client_name</th>
+                                <th>product_name</th>
+                                <th>score</th>
+                                <th>segment</th>
+                                <th>recommended_action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analyticsInteractionRows"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function analyticsFocusLabel(row) {
+    const highRisk = Number(row.high_risk_rate || 0);
+    const avgScore = Number(row.avg_interaction_score || 0);
+    if (highRisk >= 40) return 'Immediate review';
+    if (avgScore < 60) return 'Optimize scripts';
+    if (avgScore >= 80 && highRisk < 20) return 'Scale traffic';
+    return 'Monitor closely';
+}
+
+function renderAnalyticsCharts(summary) {
+    if (typeof Chart === 'undefined') return;
+    const scoreCanvas = document.getElementById('analyticsCampaignScoreChart');
+    const riskCanvas = document.getElementById('analyticsCampaignRiskChart');
+    if (!scoreCanvas || !riskCanvas) return;
+
+    const campaigns = Array.isArray(summary?.by_campaign) ? summary.by_campaign : [];
+    const labels = campaigns.map((r) => r.campaign_id);
+    const scores = campaigns.map((r) => Number(r.avg_interaction_score || 0));
+    const risks = campaigns.map((r) => Number(r.high_risk_rate || 0));
+
+    destroyAnalyticsCharts();
+
+    analyticsState.charts.campaignScore = new Chart(scoreCanvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Avg Score',
+                    data: scores,
+                    backgroundColor: 'rgba(99, 102, 241, 0.45)',
+                    borderColor: 'rgba(99, 102, 241, 0.9)',
+                    borderWidth: 1,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8' } } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } },
+                y: { min: 0, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } },
+            },
+        },
+    });
+
+    analyticsState.charts.campaignRisk = new Chart(riskCanvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'High Risk Rate %',
+                    data: risks,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.18)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 3,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8' } } },
+            scales: {
+                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } },
+                y: { min: 0, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.12)' } },
+            },
+        },
+    });
+}
+
+function renderAnalyticsTable(summary) {
+    const rowsEl = document.getElementById('analyticsCampaignRows');
+    const selectEl = document.getElementById('analyticsCampaignSelect');
+    if (!rowsEl || !selectEl) return;
+
+    const campaigns = Array.isArray(summary?.by_campaign) ? summary.by_campaign : [];
+    if (!campaigns.length) {
+        rowsEl.innerHTML = `<tr><td colspan="6" style="padding:.55rem;color:var(--text-muted);">No campaign data yet.</td></tr>`;
+        selectEl.innerHTML = `<option value="">All campaigns</option>`;
+        return;
+    }
+
+    rowsEl.innerHTML = campaigns.map((row) => `
+        <tr data-analytics-campaign="${escapeHtml(row.campaign_id)}" style="cursor:pointer;">
+            <td>${escapeHtml(row.campaign_id)}</td>
+            <td>${escapeHtml(row.total_interactions)}</td>
+            <td>${escapeHtml(row.avg_interaction_score)}</td>
+            <td>${escapeHtml(row.high_risk_rate)}%</td>
+            <td>${segmentBadge(row.dominant_segment)}</td>
+            <td>${escapeHtml(analyticsFocusLabel(row))}</td>
+        </tr>
+    `).join('');
+
+    selectEl.innerHTML = `<option value="">All campaigns</option>${campaigns.map((row) => `<option value="${escapeHtml(row.campaign_id)}">${escapeHtml(row.campaign_id)}</option>`).join('')}`;
+    selectEl.value = analyticsState.selectedCampaign || '';
+
+    rowsEl.querySelectorAll('tr[data-analytics-campaign]').forEach((tr) => {
+        tr.addEventListener('click', () => {
+            analyticsState.selectedCampaign = tr.dataset.analyticsCampaign || '';
+            if (selectEl) selectEl.value = analyticsState.selectedCampaign;
+            loadAnalyticsInteractions();
+        });
+    });
+}
+
+async function loadAnalyticsInteractions() {
+    const rowsEl = document.getElementById('analyticsInteractionRows');
+    if (!rowsEl) return;
+
+    const params = new URLSearchParams();
+    params.set('limit', '25');
+    params.set('offset', '0');
+    params.set('sort', 'date_desc');
+    if (analyticsState.selectedCampaign) params.set('campaign_id', analyticsState.selectedCampaign);
+
+    const response = await fetch(`/api/trust/interactions?${params.toString()}`, { headers: trustHeaders() });
+    if (!response.ok) {
+        rowsEl.innerHTML = `<tr><td colspan="7" style="padding:.55rem;color:#f87171;">Unable to load interactions.</td></tr>`;
+        return;
+    }
+
+    const pageData = await response.json();
+    const items = Array.isArray(pageData?.items) ? pageData.items : [];
+    if (!items.length) {
+        rowsEl.innerHTML = `<tr><td colspan="7" style="padding:.55rem;color:var(--text-muted);">No interactions for this campaign.</td></tr>`;
+        return;
+    }
+
+    rowsEl.innerHTML = items.map((row) => `
+        <tr>
+            <td>${escapeHtml(formatDateTime(row.created_at))}</td>
+            <td>${escapeHtml(row.order_id)}</td>
+            <td>${escapeHtml(row.client_name || '-')}</td>
+            <td>${escapeHtml(row.product_name || '-')}</td>
+            <td>${escapeHtml(row.interaction_score)}</td>
+            <td>${segmentBadge(row.segment)}</td>
+            <td>${escapeHtml(row.recommended_action)}</td>
+        </tr>
+    `).join('');
+}
+
+async function loadAnalyticsSection() {
+    if (analyticsSectionLoading) return;
+    if (!analyticsSectionLoaded) {
+        renderAnalyticsShell();
+        analyticsSectionLoaded = true;
+    }
+
+    const statusLine = document.getElementById('analyticsStatusLine');
+    const kpiGrid = document.getElementById('analyticsKpiGrid');
+    const campaignSelect = document.getElementById('analyticsCampaignSelect');
+    analyticsSectionLoading = true;
+    if (statusLine) statusLine.textContent = 'Loading analytics...';
+
+    try {
+        const summaryResp = await fetch('/api/trust/metrics/summary', { headers: trustHeaders() });
+        if (!summaryResp.ok) throw new Error(`Analytics API error (${summaryResp.status})`);
+        const summary = await summaryResp.json();
+
+        const campaigns = Array.isArray(summary.by_campaign) ? summary.by_campaign : [];
+        const bestCampaign = campaigns.length ? campaigns[0] : null;
+        const riskyCampaigns = campaigns.filter((r) => Number(r.high_risk_rate || 0) >= 40).length;
+
+        if (kpiGrid) {
+            kpiGrid.innerHTML = [
+                metricCard('Total campaigns', campaigns.length),
+                metricCard('Best campaign score', bestCampaign ? bestCampaign.avg_interaction_score : 0),
+                metricCard('Risky campaigns', riskyCampaigns),
+                metricCard('Trust global avg', summary.avg_interaction_score ?? 0),
+                metricCard('HIGH_RISK total', summary.high_risk_count ?? 0),
+                metricCard('Last trust update', formatDateTime(summary.last_interaction_at)),
+            ].join('');
+        }
+
+        renderAnalyticsCharts(summary);
+        renderAnalyticsTable(summary);
+
+        if (campaignSelect && !campaignSelect.dataset.bound) {
+            campaignSelect.addEventListener('change', () => {
+                analyticsState.selectedCampaign = campaignSelect.value || '';
+                loadAnalyticsInteractions();
+            });
+            campaignSelect.dataset.bound = '1';
+        }
+        await loadAnalyticsInteractions();
+
+        if (statusLine) statusLine.textContent = 'Analytics loaded with real trust data.';
+    } catch (error) {
+        console.error('Failed to load analytics section:', error);
+        if (statusLine) statusLine.textContent = 'Unable to load analytics.';
+    } finally {
+        analyticsSectionLoading = false;
     }
 }
 
@@ -611,6 +1570,117 @@ function updateDashboardStats(data) {
     }
     if (document.getElementById('totalRevenue')) {
         document.getElementById('totalRevenue').textContent = `$${data.total_revenue || 0}`;
+    }
+    if (document.getElementById('ordersChange')) {
+        document.getElementById('ordersChange').textContent = `${data.orders_today || 0} today`;
+    }
+    if (document.getElementById('confirmedChange')) {
+        const total = Number(data.total_orders || 0);
+        const confirmed = Number(data.confirmed_orders || 0);
+        const rate = total > 0 ? ((confirmed / total) * 100).toFixed(1) : '0.0';
+        document.getElementById('confirmedChange').textContent = `${rate}% confirm`;
+    }
+    if (document.getElementById('pendingChange')) {
+        document.getElementById('pendingChange').textContent = `${data.pending_orders || 0} pending`;
+    }
+    if (document.getElementById('revenueChange')) {
+        document.getElementById('revenueChange').textContent = `${data.high_risk_orders || 0} risk alerts`;
+    }
+}
+
+async function loadDashboardCharts() {
+    const token = getAuthToken();
+    if (!token || typeof Chart === 'undefined') return;
+
+    try {
+        const [revenueResp, statsResp] = await Promise.all([
+            fetch('/api/dashboard/revenue-chart?days=7', { headers: { Authorization: `Bearer ${token}` } }),
+            fetch('/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+        if (!revenueResp.ok || !statsResp.ok) return;
+
+        const revenue = await revenueResp.json();
+        const stats = await statsResp.json();
+
+        const revenueCanvas = document.getElementById('revenueChart');
+        if (revenueCanvas) {
+            if (dashboardRevenueChart) dashboardRevenueChart.destroy();
+            dashboardRevenueChart = new Chart(revenueCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: revenue.labels || [],
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data: revenue.data || [],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59,130,246,.16)',
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,.12)' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,.12)' } },
+                    },
+                },
+            });
+        }
+
+        const orderStatusCanvas = document.getElementById('orderStatusChart');
+        if (orderStatusCanvas) {
+            if (dashboardOrderStatusChart) dashboardOrderStatusChart.destroy();
+            dashboardOrderStatusChart = new Chart(orderStatusCanvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Confirmed', 'Pending', 'Rejected'],
+                    datasets: [
+                        {
+                            data: [
+                                Number(stats.confirmed_orders || 0),
+                                Number(stats.pending_orders || 0),
+                                Number(stats.rejected_orders || 0),
+                            ],
+                            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                            borderWidth: 0,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8' } } },
+                },
+            });
+        }
+    } catch (error) {
+        console.error('Error loading dashboard charts:', error);
+    }
+}
+
+async function loadDashboardTrustLinkage() {
+    const token = getAuthToken();
+    if (!token) return;
+    try {
+        const response = await fetch('/api/trust/metrics/summary', {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) return;
+        const trust = await response.json();
+        if (document.getElementById('pendingChange')) {
+            document.getElementById('pendingChange').textContent = `${trust.high_risk_count || 0} HIGH_RISK`;
+        }
+        if (document.getElementById('revenueChange')) {
+            document.getElementById('revenueChange').textContent = `Trust avg ${trust.avg_interaction_score || 0}`;
+        }
+    } catch (error) {
+        console.error('Error loading trust linkage:', error);
     }
 }
 

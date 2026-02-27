@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine
 from app.routes import auth, orders, boutiques, dashboard, trust, payments, admin
 import app.models  # ensure models are registered before metadata creation
+import app.modules.trust.models  # ensure trust models are registered before metadata creation
 
 # Create FastAPI app
 app = FastAPI(

@@ -13,10 +13,17 @@ def run_call_agent_for_order(order_id: int, locale: str = "fr"):
         order = db.get(Order, order_id)
         if not order:
             return {"ok": False, "reason": "order_not_found"}
+        tenant_id = int(order.tenant_id or 0)
+        if tenant_id <= 0:
+            return {"ok": False, "reason": "tenant_missing"}
 
         last_decision = (
             db.query(AIDecision)
-            .filter(AIDecision.source_type == "order", AIDecision.source_id == order_id)
+            .filter(
+                AIDecision.source_type == "order",
+                AIDecision.source_id == order_id,
+                AIDecision.tenant_id == tenant_id,
+            )
             .order_by(AIDecision.created_at.desc())
             .first()
         )
@@ -27,6 +34,7 @@ def run_call_agent_for_order(order_id: int, locale: str = "fr"):
             ai_decision = "reject"
 
         call = Call(
+            tenant_id=tenant_id,
             order_id=order_id,
             agent_id=0,
             transcript=f"[{locale}] Simulated AI confirmation call for order #{order_id}",
@@ -39,4 +47,3 @@ def run_call_agent_for_order(order_id: int, locale: str = "fr"):
         return {"ok": True, "call_id": call.id, "order_id": order_id}
     finally:
         db.close()
-

@@ -16,7 +16,6 @@ from app.database import get_db
 from app.models import User, UserProfile
 from app.schemas import (
     SignupRequest,
-    ProfileRequest,
     LoginRequest,
     TokenResponse,
     ProfileSettingsResponse,
@@ -26,6 +25,7 @@ from app.schemas import (
     SystemSettings,
 )
 from app.utils.security import hash_password, verify_password, create_access_token, decode_access_token
+from app.utils.tenant import require_tenant_id
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 security = HTTPBearer()
@@ -40,6 +40,22 @@ def _build_frontend_redirect_url(path: str = "/login.html") -> str:
     base = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000").rstrip("/")
     normalized_path = path if path.startswith("/") else f"/{path}"
     return f"{base}{normalized_path}"
+
+
+def _ensure_user_tenant(db: Session, user: User) -> int:
+    if user.tenant_id:
+        return int(user.tenant_id)
+    user.tenant_id = user.id
+    db.commit()
+    db.refresh(user)
+    return int(user.tenant_id)
+
+def _allocate_user_id(db: Session) -> int:
+    """Reserve the next users.id value so id and tenant_id can be set atomically."""
+    next_id = db.execute(
+        text("SELECT nextval(pg_get_serial_sequence('users', 'id'))")
+    ).scalar()
+    return int(next_id)
 
 
 def _google_oauth_config() -> tuple[str, str, str]:
@@ -71,7 +87,10 @@ def signup(data: SignupRequest, db: Session = Depends(get_db)):
     # Hash password before storing
     hashed_pwd = hash_password(data.password)
     
+    user_id = _allocate_user_id(db)
     user = User(
+        id=user_id,
+        tenant_id=user_id,
         email=data.email,
         password_hash=hashed_pwd,
         full_name=data.full_name,
@@ -120,52 +139,20 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
     
     # Create access token
     access_token = create_access_token(
-        data={"sub": user.email, "user_id": user.id, "role": _normalize_role(user.role)}
+        data={
+            "sub": user.email,
+            "user_id": user.id,
+            "role": _normalize_role(user.role),
+            "tenant_id": _ensure_user_tenant(db, user),
+        }
     )
     
     return TokenResponse(
         access_token=access_token,
         token_type="bearer",
-        user_id=user.id
+        user_id=user.id,
+        tenant_id=require_tenant_id(user.tenant_id),
     )
-
-
-@router.post("/profile", response_model=dict)
-def choose_profile(data: ProfileRequest, db: Session = Depends(get_db)):
-    """
-    Choisir le profil de vente du merchant
-    """
-    user = db.get(User, data.user_id)
-    
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Utilisateur non trouvé"
-        )
-    
-    # Check if profile already exists
-    existing_profile = db.query(UserProfile).filter_by(user_id=user.id).first()
-    
-    if existing_profile:
-        # Update existing profile
-        existing_profile.selling_type = data.selling_type
-        db.commit()
-        db.refresh(existing_profile)
-        return {
-            "message": "Profil mis à jour",
-            "profile_id": existing_profile.id
-        }
-    
-    # Create new profile
-    profile = UserProfile(user_id=user.id, selling_type=data.selling_type)
-    db.add(profile)
-    db.commit()
-    db.refresh(profile)
-    
-    return {
-        "message": "Profil enregistré",
-        "profile_id": profile.id
-    }
 
 
 def get_current_user(
@@ -185,6 +172,8 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    token_tenant_id = require_tenant_id(payload.get("tenant_id"))
+
     email: str = payload.get("sub")
     if email is None:
         raise HTTPException(
@@ -201,7 +190,20 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    user_tenant_id = _ensure_user_tenant(db, user)
+    if token_tenant_id != user_tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Tenant mismatch in token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     return user
+
+
+@router.get("/profile")
+def get_profile(current_user: User = Depends(get_current_user)):
+    return current_user
 
 
 @router.get("/me")
@@ -211,6 +213,7 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
     """
     return {
         "id": current_user.id,
+        "tenant_id": current_user.tenant_id,
         "email": current_user.email,
         "full_name": current_user.full_name,
         "phone": current_user.phone,
@@ -221,11 +224,18 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
 
 
 def _ensure_user_profile(db: Session, user_id: int) -> UserProfile:
-    profile = db.query(UserProfile).filter_by(user_id=user_id).first()
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Utilisateur non trouvé",
+        )
+    tenant_id = _ensure_user_tenant(db, user)
+    profile = db.query(UserProfile).filter_by(user_id=user_id, tenant_id=tenant_id).first()
     if profile:
         return profile
 
-    profile = UserProfile(user_id=user_id, selling_type="mix")
+    profile = UserProfile(user_id=user_id, tenant_id=tenant_id, selling_type="mix")
     db.add(profile)
     db.commit()
     db.refresh(profile)
@@ -440,27 +450,23 @@ def google_callback(code: str = Query(default=""), state: str = Query(default=""
     try:
         is_new_user = False
         user_row = db.execute(
-            text("SELECT id, email, role FROM users WHERE email = :email LIMIT 1"),
+            text("SELECT id, email, role, tenant_id FROM users WHERE email = :email LIMIT 1"),
             {"email": email[:100]},
         ).mappings().first()
 
         if not user_row:
             random_pwd = secrets.token_urlsafe(32)
             try:
-                db.execute(
-                    text(
-                        """
-                        INSERT INTO users (full_name, email, password_hash, role)
-                        VALUES (:full_name, :email, :password_hash, :role)
-                        """
-                    ),
-                    {
-                        "full_name": full_name,
-                        "email": email[:100],
-                        "password_hash": hash_password(random_pwd),
-                        "role": "user",
-                    },
+                user_id = _allocate_user_id(db)
+                new_user = User(
+                    id=user_id,
+                    tenant_id=user_id,
+                    full_name=full_name,
+                    email=email[:100],
+                    password_hash=hash_password(random_pwd),
+                    role="user",
                 )
+                db.add(new_user)
                 db.commit()
                 is_new_user = True
             except IntegrityError:
@@ -470,7 +476,7 @@ def google_callback(code: str = Query(default=""), state: str = Query(default=""
                 raise
 
             user_row = db.execute(
-                text("SELECT id, email, role FROM users WHERE email = :email LIMIT 1"),
+                text("SELECT id, email, role, tenant_id FROM users WHERE email = :email LIMIT 1"),
                 {"email": email[:100]},
             ).mappings().first()
 
@@ -478,17 +484,30 @@ def google_callback(code: str = Query(default=""), state: str = Query(default=""
             error = urllib.parse.quote("Could not create or retrieve user account.")
             return RedirectResponse(url=f"{frontend_login}?oauth_error={error}")
 
+        if user_row.get("tenant_id") is None:
+            db.execute(
+                text("UPDATE users SET tenant_id = :tenant_id WHERE id = :user_id"),
+                {"tenant_id": int(user_row["id"]), "user_id": int(user_row["id"])},
+            )
+            db.commit()
+            user_row = db.execute(
+                text("SELECT id, email, role, tenant_id FROM users WHERE email = :email LIMIT 1"),
+                {"email": email[:100]},
+            ).mappings().first()
+
         app_token = create_access_token(
             data={
                 "sub": user_row["email"],
                 "user_id": int(user_row["id"]),
                 "role": _normalize_role(user_row["role"]),
+                "tenant_id": int(user_row["tenant_id"]),
             }
         )
         query = urllib.parse.urlencode(
             {
                 "token": app_token,
                 "user_id": int(user_row["id"]),
+                "tenant_id": int(user_row["tenant_id"]),
                 "first_login": "1" if is_new_user else "0",
             }
         )
@@ -500,3 +519,4 @@ def google_callback(code: str = Query(default=""), state: str = Query(default=""
             f"Server database error during Google sign-in ({exc.__class__.__name__})."
         )
         return RedirectResponse(url=f"{frontend_login}?oauth_error={error}")
+

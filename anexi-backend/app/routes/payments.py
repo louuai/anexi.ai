@@ -11,6 +11,7 @@ from app.schemas import PaymentCreate, PaymentResponse
 from app.workers.dispatch import enqueue_task
 from app.workers.analytics_tasks import refresh_analytics_for_user
 from app.workers.payment_tasks import process_payment_webhook_event
+from app.utils.tenant import require_tenant_id
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 
@@ -21,21 +22,23 @@ def create_payment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    tenant_id = require_tenant_id(current_user.tenant_id)
     boutique = db.get(Boutique, payload.boutique_id)
-    if not boutique or boutique.owner_id != current_user.id:
+    if not boutique or boutique.owner_id != current_user.id or boutique.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Boutique non autorisee pour ce compte",
         )
 
     customer = db.get(Customer, payload.customer_id)
-    if not customer or customer.boutique_id != boutique.id:
+    if not customer or customer.boutique_id != boutique.id or customer.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Customer non valide pour cette boutique",
         )
 
     payment = Payment(
+        tenant_id=tenant_id,
         user_id=current_user.id,
         boutique_id=boutique.id,
         customer_id=customer.id,
@@ -57,9 +60,10 @@ def list_my_payments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    tenant_id = require_tenant_id(current_user.tenant_id)
     return (
         db.query(Payment)
-        .filter(Payment.user_id == current_user.id)
+        .filter(Payment.user_id == current_user.id, Payment.tenant_id == tenant_id)
         .order_by(Payment.created_at.desc())
         .all()
     )
@@ -81,7 +85,7 @@ def payment_webhook(
                 detail="Invalid webhook secret",
             )
 
-    accepted = enqueue_task(process_payment_webhook_event, payload or {})
+    accepted = enqueue_task(process_payment_webhook_event, dict(payload or {}))
     return {
         "accepted": bool(accepted),
         "message": "Webhook queued for async processing",

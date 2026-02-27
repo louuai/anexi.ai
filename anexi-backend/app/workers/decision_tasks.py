@@ -17,10 +17,13 @@ def process_order_decision(order_id: int):
         order = db.get(Order, order_id)
         if not order:
             return {"ok": False, "reason": "order_not_found"}
+        tenant_id = int(order.tenant_id or 0)
+        if tenant_id <= 0:
+            return {"ok": False, "reason": "tenant_missing"}
 
         customer_orders = (
             db.query(Order)
-            .filter(Order.customer_id == order.customer_id)
+            .filter(Order.customer_id == order.customer_id, Order.tenant_id == tenant_id)
             .all()
         )
         total_orders = len(customer_orders)
@@ -44,6 +47,7 @@ def process_order_decision(order_id: int):
 
         db.add(
             AIDecision(
+                tenant_id=tenant_id,
                 source_type="order",
                 source_id=order.id,
                 score=trust_score,
@@ -59,4 +63,3 @@ def process_order_decision(order_id: int):
         return {"ok": True, "order_id": order.id, "score": str(trust_score), "decision": decision}
     finally:
         db.close()
-

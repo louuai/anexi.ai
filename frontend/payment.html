@@ -12,6 +12,8 @@
       --nav-h: 76px;
       --content-max: 1240px;
       --bg-light: #f8f8f6;
+      --trust-card-bg: rgba(255, 255, 255, 0.88);
+      --trust-card-border: rgba(16, 55, 84, 0.14);
     }
 
     * {
@@ -298,8 +300,8 @@
 
     .plan-change-section {
       width: min(var(--content-max), calc(100% - 48px));
-      background: rgba(255, 255, 255, 0.72);
-      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
       box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
       border-radius: 24px;
       padding: 24px;
@@ -310,8 +312,8 @@
       width: min(var(--content-max), calc(100% - 48px));
       margin-top: -24px;
       margin-bottom: 18px;
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(241, 247, 255, 0.88));
-      border: 1px solid rgba(37, 99, 235, 0.18);
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
       border-radius: 20px;
       box-shadow: 0 22px 38px rgba(15, 23, 42, 0.1);
       padding: 18px 20px;
@@ -504,7 +506,7 @@
     }
 
     .pack-card {
-      --card-bg: #ffffff;
+      --card-bg: var(--trust-card-bg);
       --card-accent: #7c3aed;
       --card-accent-rgb: 124, 58, 237;
       --card-text: #1e293b;
@@ -517,7 +519,7 @@
       overflow: hidden;
       transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: var(--card-shadow);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid var(--trust-card-border);
       font-family: "DM Sans", sans-serif;
       isolation: isolate;
       will-change: transform;
@@ -575,11 +577,11 @@
       width: calc(100% - 10px);
       height: calc(100% - 10px);
       z-index: 2;
-      background: rgba(255, 255, 255, 0.95);
+      background: var(--trust-card-bg);
       backdrop-filter: blur(24px);
       border-radius: 14px;
       overflow: hidden;
-      outline: 2px solid white;
+      outline: 1px solid var(--trust-card-border);
     }
 
     .pack-card__blob {
@@ -846,7 +848,8 @@
     .modal {
       width: fit-content;
       height: fit-content;
-      background: #ffffff;
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
       box-shadow: 0px 187px 75px rgba(0, 0, 0, 0.01), 0px 105px 63px rgba(0, 0, 0, 0.05), 0px 47px 47px rgba(0, 0, 0, 0.09), 0px 12px 26px rgba(0, 0, 0, 0.1), 0px 0px 0px rgba(0, 0, 0, 0.1);
       border-radius: 26px;
       max-width: 1020px;
@@ -879,8 +882,8 @@
     }
 
     .plan-summary {
-      background: #f7f8fb;
-      border: 1px solid #eceff5;
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
       border-radius: 12px;
       padding: 12px;
       text-align: center;
@@ -907,9 +910,9 @@
 
     .payment--options button {
       height: 55px;
-      background: #f2f2f2;
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
       border-radius: 11px;
-      border: 0;
       outline: none;
       font-weight: 700;
       color: #334155;
@@ -951,8 +954,8 @@
 
     .pay-btn-paypal {
       color: #003087;
-      border: 1px solid rgba(0, 48, 135, 0.15);
-      background: #eef4ff;
+      border: 1px solid var(--trust-card-border);
+      background: var(--trust-card-bg);
     }
 
     .pay-btn-paypal::before {
@@ -966,8 +969,8 @@
 
     .pay-btn-apple {
       color: #111111;
-      border: 1px solid rgba(17, 17, 17, 0.16);
-      background: #f4f4f4;
+      border: 1px solid var(--trust-card-border);
+      background: var(--trust-card-bg);
     }
 
     .pay-btn-apple::before {
@@ -981,8 +984,8 @@
 
     .pay-btn-google {
       color: #1f2937;
-      border: 1px solid rgba(15, 23, 42, 0.12);
-      background: #f8f9fb;
+      border: 1px solid var(--trust-card-border);
+      background: var(--trust-card-bg);
     }
 
     .pay-btn-google::before {
@@ -1063,8 +1066,8 @@
       padding: 0 0 0 16px;
       border-radius: 9px;
       outline: none;
-      background-color: #f2f2f2;
-      border: 1px solid #e5e5e500;
+      background-color: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
       transition: all 0.3s cubic-bezier(0.15, 0.83, 0.66, 1);
     }
 
@@ -1098,8 +1101,8 @@
     }
 
     .live-card-panel {
-      background: #f7f9fe;
-      border: 1px solid #e4e9f5;
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
       border-radius: 14px;
       padding: 18px;
       display: grid;
@@ -1126,7 +1129,8 @@
 
     .success-panel {
       width: min(640px, 100%);
-      background: #fff;
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
       border-radius: 24px;
       padding: 26px;
       box-shadow: 0 30px 60px rgba(15, 23, 42, 0.15);
@@ -1382,6 +1386,21 @@
       .pay-footer {
         width: calc(100% - 32px);
       }
+    }
+    /* Final card override to match dashboard/trust glass cards */
+    .modal,
+    .plan-summary,
+    .live-card-panel,
+    .success-panel,
+    .plan-change-section,
+    .selected-pack-section,
+    .pack-card,
+    .pack-card__bg,
+    .payment--options button,
+    .input_field {
+      background: var(--trust-card-bg) !important;
+      border-color: var(--trust-card-border) !important;
+      backdrop-filter: blur(20px);
     }
   </style>
 </head>

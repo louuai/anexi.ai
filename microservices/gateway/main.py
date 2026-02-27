@@ -12,10 +12,12 @@ from app.observability.context import (
     REQUEST_ID_HEADER,
     get_correlation_id,
 )
+from app.utils.security import decode_access_token
 
 SERVICE_MAP: Dict[str, str] = {
     "auth": os.getenv("AUTH_SERVICE_URL", "http://auth-service:8000"),
     "admin": os.getenv("AUTH_SERVICE_URL", "http://auth-service:8000"),
+    "internal": os.getenv("TRUST_SERVICE_URL", "http://trust-service:8000"),
     "orders": os.getenv("ORDERS_SERVICE_URL", "http://orders-service:8000"),
     "boutiques": os.getenv("ORDERS_SERVICE_URL", "http://orders-service:8000"),
     "ai": os.getenv("AI_SERVICE_URL", os.getenv("ANALYTICS_SERVICE_URL", "http://analytics-service:8000")),
@@ -85,6 +87,11 @@ async def proxy(path: str, request: Request):
 
     body = await request.body()
     headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.lower().startswith("bearer "):
+        payload = decode_access_token(auth_header.split(" ", 1)[1].strip())
+        if payload and payload.get("tenant_id") is not None:
+            headers["X-Tenant-Id"] = str(payload["tenant_id"])
     correlation_id = get_correlation_id() or request.headers.get(CORRELATION_ID_HEADER, "")
     if correlation_id:
         headers[CORRELATION_ID_HEADER] = correlation_id

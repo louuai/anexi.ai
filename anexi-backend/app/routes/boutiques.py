@@ -1,4 +1,5 @@
 from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -6,6 +7,7 @@ from app.database import get_db
 from app.models import User, Boutique, Customer
 from app.schemas import BoutiqueCreate, BoutiqueResponse, CustomerCreate, CustomerResponse
 from app.routes.auth import get_current_user
+from app.utils.tenant import require_tenant_id
 
 router = APIRouter(prefix="/boutiques", tags=["Boutiques"])
 
@@ -14,58 +16,50 @@ router = APIRouter(prefix="/boutiques", tags=["Boutiques"])
 def create_boutique(
     boutique: BoutiqueCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    """
-    Créer une nouvelle boutique
-    """
+    tenant_id = require_tenant_id(current_user.tenant_id)
     new_boutique = Boutique(
+        tenant_id=tenant_id,
         name=boutique.name,
-        owner_id=current_user.id
+        owner_id=current_user.id,
     )
-    
+
     db.add(new_boutique)
     db.commit()
     db.refresh(new_boutique)
-    
     return new_boutique
 
 
 @router.get("/", response_model=List[BoutiqueResponse])
 def get_boutiques(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    """
-    Récupérer toutes les boutiques de l'utilisateur
-    """
-    boutiques = db.query(Boutique).filter(Boutique.owner_id == current_user.id).all()
-    return boutiques
+    tenant_id = require_tenant_id(current_user.tenant_id)
+    return (
+        db.query(Boutique)
+        .filter(Boutique.owner_id == current_user.id, Boutique.tenant_id == tenant_id)
+        .all()
+    )
 
 
 @router.get("/{boutique_id}", response_model=BoutiqueResponse)
 def get_boutique(
     boutique_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    """
-    Récupérer une boutique spécifique
-    """
-    boutique = db.get(Boutique, boutique_id)
-    
+    tenant_id = require_tenant_id(current_user.tenant_id)
+    boutique = (
+        db.query(Boutique)
+        .filter(Boutique.id == boutique_id, Boutique.tenant_id == tenant_id)
+        .first()
+    )
     if not boutique:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Boutique non trouvée"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Boutique non trouvee")
     if boutique.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès non autorisé"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces non autorise")
     return boutique
 
 
@@ -74,40 +68,39 @@ def create_customer(
     boutique_id: int,
     customer: CustomerCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    """
-    Ajouter un nouveau client à une boutique
-    """
-    # Verify boutique ownership
-    boutique = db.get(Boutique, boutique_id)
+    tenant_id = require_tenant_id(current_user.tenant_id)
+    boutique = (
+        db.query(Boutique)
+        .filter(Boutique.id == boutique_id, Boutique.tenant_id == tenant_id)
+        .first()
+    )
     if not boutique or boutique.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Boutique non autorisée"
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Boutique non autorisee")
+
+    existing = (
+        db.query(Customer)
+        .filter(
+            Customer.phone == customer.phone,
+            Customer.boutique_id == boutique_id,
+            Customer.tenant_id == tenant_id,
         )
-    
-    # Check if customer already exists (by phone)
-    existing = db.query(Customer).filter(
-        Customer.phone == customer.phone,
-        Customer.boutique_id == boutique_id
-    ).first()
-    
+        .first()
+    )
     if existing:
         return existing
-    
-    # Create new customer
+
     new_customer = Customer(
+        tenant_id=tenant_id,
         full_name=customer.full_name,
         phone=customer.phone,
         email=customer.email,
-        boutique_id=boutique_id
+        boutique_id=boutique_id,
     )
-    
     db.add(new_customer)
     db.commit()
     db.refresh(new_customer)
-    
     return new_customer
 
 
@@ -115,18 +108,19 @@ def create_customer(
 def get_customers(
     boutique_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-    """
-    Récupérer tous les clients d'une boutique
-    """
-    # Verify boutique ownership
-    boutique = db.get(Boutique, boutique_id)
+    tenant_id = require_tenant_id(current_user.tenant_id)
+    boutique = (
+        db.query(Boutique)
+        .filter(Boutique.id == boutique_id, Boutique.tenant_id == tenant_id)
+        .first()
+    )
     if not boutique or boutique.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Boutique non autorisée"
-        )
-    
-    customers = db.query(Customer).filter(Customer.boutique_id == boutique_id).all()
-    return customers
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Boutique non autorisee")
+
+    return (
+        db.query(Customer)
+        .filter(Customer.boutique_id == boutique_id, Customer.tenant_id == tenant_id)
+        .all()
+    )

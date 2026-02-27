@@ -18,4 +18,3 @@ def process_payment_webhook_event(event: Dict[str, Any]):
         enqueue_task(refresh_analytics_for_user, int(user_id), f"payment_webhook:{event_type}")
 
     return {"ok": True, "event_type": event_type}
-

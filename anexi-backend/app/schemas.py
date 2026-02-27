@@ -23,6 +23,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user_id: int
+    tenant_id: int
 
 
 # ============== USER SCHEMAS ==============
@@ -46,10 +47,6 @@ class UserResponse(UserBase):
 
 
 # ============== USER PROFILE SCHEMAS ==============
-
-class ProfileRequest(BaseModel):
-    user_id: int
-    selling_type: str  # fb_ads / boutique / whatsapp / mix
 
 
 class ProfileResponse(BaseModel):
@@ -266,3 +263,4 @@ class PaymentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+

@@ -300,7 +300,7 @@
         }
 
         .profile-nav {
-            background: var(--surface-glass);
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-lg);
             padding: 1rem;
@@ -340,7 +340,7 @@
         }
 
         .profile-content {
-            background: var(--surface-glass);
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-3d);
@@ -1019,6 +1019,151 @@
             color: white;
         }
 
+        .trust-layer-shell {
+            background:
+                radial-gradient(circle at 12% 22%, rgba(99, 102, 241, 0.18), transparent 42%),
+                radial-gradient(circle at 85% 16%, rgba(236, 72, 153, 0.16), transparent 45%),
+                rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+        }
+
+        .trust-layer-head p {
+            margin-bottom: 0;
+        }
+
+        .trust-switchbar {
+            margin: 1rem auto 0;
+            width: fit-content;
+            display: flex;
+            gap: 0.45rem;
+            padding: 0.35rem;
+            border-radius: 999px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(12px);
+        }
+
+        .trust-tab-btn {
+            border: 0;
+            border-radius: 999px;
+            padding: 0.48rem 1rem;
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            background: transparent;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .trust-tab-btn:hover {
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+
+        .trust-tab-btn.active {
+            color: white;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.95), rgba(236, 72, 153, 0.9));
+            box-shadow: 0 8px 22px rgba(99, 102, 241, 0.35);
+        }
+
+        .trust-pane {
+            display: none;
+            margin-top: 1rem;
+            animation: fadeInSection 0.2s ease;
+        }
+
+        .trust-pane.active {
+            display: block;
+        }
+
+        .trust-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .trust-card-block {
+            margin-top: 1rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.9rem;
+        }
+
+        .trust-card-block h4 {
+            margin: 0 0 0.65rem 0;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .trust-chip-list {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .trust-table-wrap {
+            overflow-x: auto;
+        }
+
+        .trust-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.84rem;
+        }
+
+        .trust-table th,
+        .trust-table td {
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .trust-table th {
+            color: var(--text-muted);
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .trust-table tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .trust-filter-row {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.75rem;
+        }
+
+        .trust-select {
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            padding: 0 0.65rem;
+        }
+
+        .trust-pager {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.7rem;
+        }
+
+        .trust-pager span {
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }
+
+        .trust-pager-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
         .action-text {
             font-weight: 600;
             color: var(--text-primary);
@@ -1534,12 +1679,12 @@
         </section>
 
         <section class="dashboard-section" id="section-payment">
-            <iframe id="paymentEmbed" class="payment-embed" src="payment.html?embed=1" title="Payment Section"></iframe>
+            <iframe id="paymentEmbed" class="payment-embed" src="payment.html?embed=1&v=20260227-11" title="Payment Section"></iframe>
         </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="js/dashboard.js?v=20260222-1"></script>
+    <script src="js/dashboard.js?v=20260227-7"></script>
 </body>
 
 </html>

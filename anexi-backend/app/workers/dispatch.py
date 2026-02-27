@@ -18,3 +18,16 @@ def enqueue_task(task, *args, **kwargs):
     except Exception:
         logger.exception("Failed to enqueue task %s", getattr(task, "name", str(task)))
         return False
+
+
+def enqueue_task_result(task, *args, **kwargs):
+    """
+    Dispatch task and return AsyncResult so caller can track progress.
+    """
+    try:
+        correlation_id = get_correlation_id()
+        headers = {CORRELATION_ID_HEADER: correlation_id} if correlation_id else None
+        return task.apply_async(args=args, kwargs=kwargs, headers=headers)
+    except Exception:
+        logger.exception("Failed to enqueue task %s", getattr(task, "name", str(task)))
+        return None

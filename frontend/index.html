@@ -996,7 +996,8 @@
 
   <section class="hero" id="hero">
     <div class="hero-media" id="heroMedia">
-      <video class="hero-video" autoplay muted loop playsinline preload="auto">
+      <video class="hero-video" id="heroVideo" autoplay muted loop playsinline preload="auto">
+        <source src="assets/video-optimized.mp4" type="video/mp4" />
         <source src="assets/video.mp4" type="video/mp4" />
       </video>
     </div>
@@ -1269,6 +1270,27 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
   <script>
+    const heroVideo = document.getElementById("heroVideo");
+    if (heroVideo) {
+      const resumeHeroVideo = () => {
+        if (document.visibilityState !== "hidden") {
+          heroVideo.play().catch(() => {});
+        }
+      };
+
+      heroVideo.muted = true;
+      heroVideo.playsInline = true;
+      heroVideo.defaultMuted = true;
+
+      ["loadeddata", "canplay", "stalled", "waiting", "suspend"].forEach((evt) => {
+        heroVideo.addEventListener(evt, resumeHeroVideo, { passive: true });
+      });
+
+      document.addEventListener("visibilitychange", resumeHeroVideo);
+      window.addEventListener("focus", resumeHeroVideo);
+      resumeHeroVideo();
+    }
+
     gsap.registerPlugin(ScrollTrigger);
 
     const lenis = new Lenis({

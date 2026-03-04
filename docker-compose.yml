@@ -92,15 +92,17 @@ services:
   # Frontend Nginx Server
   frontend:
     profiles: ["monolith"]
-    build:
-      context: .
-      dockerfile: frontend-react/Dockerfile
+    image: nginx:alpine
     container_name: anexi_frontend
     restart: unless-stopped
     ports:
       - "3000:80"
     environment:
       API_UPSTREAM: backend
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.frontend.template.conf:/etc/nginx/templates/default.conf.template:ro
+    command: /bin/sh -c "envsubst '$$API_UPSTREAM' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
     depends_on:
       backend:
         condition: service_started

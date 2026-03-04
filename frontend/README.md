@@ -13,7 +13,6 @@ frontend/
 │   └── style.css       # Styles complets avec animations
 └── js/
     ├── auth.js         # Logique d'authentification
-    └── animations.js   # Animations homepage
 ```
 
 ## ✨ Features

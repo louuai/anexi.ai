@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anexi.ai | AI SaaS for E-commerce Growth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #13131a;
+      --bg-light: #f8f8f6;
+      --bg-glass-a: #e9f2ff;
+      --bg-glass-b: #f4f8ff;
+      --accent: #2563eb;
+      --text: #ffffff;
+      --text-soft: rgba(255, 255, 255, 0.6);
+      --text-dark: #0f172a;
+      --text-dark-soft: rgba(15, 23, 42, 0.68);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-light: rgba(37, 99, 235, 0.2);
+      --radius-card: 16px;
+      --radius-btn: 8px;
+      --section-gap: 100px;
+      --content-max: 1240px;
+      --nav-h: 76px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    html::-webkit-scrollbar, body::-webkit-scrollbar {
+      display: none;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    .container {
+      width: min(var(--content-max), calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .section {
+      padding: var(--section-gap) 0;
+      position: relative;
+    }
+
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      height: var(--nav-h);
+      transition: transform 0.45s ease, opacity 0.45s ease, background 0.35s ease, border-color 0.35s ease;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+    }
+
+    .nav.is-hidden {
+      transform: translateY(-110%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .nav.scrolled {
+      background: transparent;
+      border-color: transparent;
+      backdrop-filter: none;
+    }
+
+    .nav-wrap {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .brand {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-weight: 700;
+      font-size: 1.45rem;
+      letter-spacing: -0.02em;
+      color: #000;
+    }
+
+    .brand span {
+      color: var(--accent);
+    }
+
+    .brand-logo {
+      display: block;
+      width: auto;
+      height: 38px;
+      object-fit: contain;
+    }
+
+    .footer .brand-logo {
+      height: 34px;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      color: #fff;
+      font-size: 1.24rem;
+      font-weight: 700;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-btn);
+      font-weight: 600;
+      padding: 12px 18px;
+      transition: all 0.25s ease;
+      will-change: transform;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border: 1px solid var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 34px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-get-started {
+      padding: 0.6em 2em;
+      border: none;
+      outline: none;
+      color: #fff;
+      background: #111;
+      cursor: pointer;
+      position: relative;
+      z-index: 0;
+      border-radius: 10px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .btn-get-started::before {
+      content: "";
+      background: linear-gradient(
+        45deg,
+        #ff0000,
+        #ff7300,
+        #fffb00,
+        #48ff00,
+        #00ffd5,
+        #002bff,
+        #7a00ff,
+        #ff00c8,
+        #ff0000
+      );
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      background-size: 400%;
+      z-index: -1;
+      filter: blur(5px);
+      -webkit-filter: blur(5px);
+      width: calc(100% + 4px);
+      height: calc(100% + 4px);
+      animation: glowing-button-get-started 20s linear infinite;
+      transition: opacity 0.3s ease-in-out;
+      border-radius: 10px;
+    }
+
+    @keyframes glowing-button-get-started {
+      0% {
+        background-position: 0 0;
+      }
+      50% {
+        background-position: 400% 0;
+      }
+      100% {
+        background-position: 0 0;
+      }
+    }
+
+    .btn-get-started::after {
+      z-index: -1;
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #222;
+      left: 0;
+      top: 0;
+      border-radius: 10px;
+    }
+
+    .btn-ghost {
+      border: 1px solid var(--border);
+      color: var(--text-soft);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .btn-ghost:hover {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .hero {
+      min-height: 100vh;
+      padding-top: calc(var(--nav-h) + 50px);
+      padding-bottom: 70px;
+      position: relative;
+      overflow: clip;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .hero-media {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      will-change: transform, filter;
+    }
+
+    .hero-media::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 8%, rgba(0, 0, 0, 0.18) 46%, rgba(0, 0, 0, 0.05) 100%);
+      pointer-events: none;
+    }
+
+    .hero-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+      padding-bottom: 40px;
+    }
+
+    .hero-label {
+      display: inline-block;
+      letter-spacing: 0.12em;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.78);
+      margin-bottom: 20px;
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+    }
+
+    .hero-title {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+
+    .hero-title .word-mask {
+      overflow: hidden;
+      display: inline-block;
+      margin-right: 0.18em;
+      vertical-align: top;
+    }
+
+    .hero-title .hero-word {
+      display: inline-block;
+      will-change: transform;
+    }
+
+    .hero-subtitle {
+      max-width: 640px;
+      color: var(--text-soft);
+      font-size: 1.08rem;
+      line-height: 1.7;
+      margin-bottom: 30px;
+      will-change: transform, opacity;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+      will-change: transform, opacity;
+    }
+
+    .hero-actions .btn-ghost {
+      border: none;
+      background: transparent;
+      color: #fff;
+      padding-inline: 0;
+    }
+
+    .section-overlap {
+      background: var(--bg-light);
+      color: #111;
+      margin-top: -60px;
+      border-radius: 36px 36px 0 0;
+      z-index: 2;
+    }
+
+    .integration-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 44px;
+      align-items: center;
+    }
+
+    .integration-media {
+      position: relative;
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      min-height: 480px;
+      clip-path: inset(50% 50% 50% 50% round 16px);
+      will-change: clip-path, transform;
+    }
+
+    .integration-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .floating-ui {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.92);
+      color: #111;
+      border-radius: 14px;
+      padding: 14px 16px;
+      border: 1px solid rgba(17, 17, 17, 0.08);
+      box-shadow: 0 22px 40px rgba(0, 0, 0, 0.18);
+      min-width: 190px;
+    }
+
+    .floating-ui p {
+      font-size: 0.8rem;
+      color: #5b5b66;
+      margin-top: 5px;
+    }
+
+    .eyebrow {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .integration-text {
+      will-change: transform, opacity;
+    }
+
+    .integration-text .eyebrow {
+      color: #4a4a57;
+    }
+
+    .section-title {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: clamp(2rem, 3.3vw, 3.2rem);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+    }
+
+    .integration-text p {
+      color: #54545f;
+      max-width: 520px;
+      line-height: 1.75;
+      margin-bottom: 22px;
+    }
+
+    .sticky-section {
+      background: radial-gradient(120% 80% at 10% 15%, rgba(173, 210, 255, 0.65) 0%, transparent 45%),
+                  linear-gradient(180deg, var(--bg-glass-a) 0%, var(--bg-glass-b) 100%);
+      color: var(--text-dark);
+    }
+
+    .sticky-intro {
+      margin-bottom: 24px;
+    }
+
+    .sticky-stack {
+      position: relative;
+      padding-bottom: 200px;
+    }
+
+    .sticky-card {
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-card);
+      padding: 32px;
+      position: sticky;
+      top: 110px;
+      margin-bottom: 20px;
+      transform-origin: top center;
+      will-change: transform, filter;
+      backdrop-filter: blur(18px);
+      box-shadow: 0 14px 40px rgba(37, 99, 235, 0.12);
+    }
+
+    .sticky-card h3 {
+      font-family: "Bricolage Grotesque", sans-serif;
+      margin-bottom: 10px;
+      font-size: 1.6rem;
+    }
+
+    .sticky-card p {
+      color: var(--text-dark-soft);
+      line-height: 1.75;
+    }
+
+    .feature-section {
+      background: linear-gradient(180deg, var(--bg-glass-b) 0%, #eef5ff 100%);
+      color: var(--text-dark);
+    }
+
+    .feature-head {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: var(--radius-card);
+      border: 1px solid var(--border-light);
+      padding: 24px;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      will-change: transform, opacity;
+      backdrop-filter: blur(16px);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(37, 99, 235, 0.65);
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35), 0 16px 28px rgba(37, 99, 235, 0.2);
+    }
+
+    .feature-icon {
+      width: 36px;
+      height: 36px;
+      margin-bottom: 14px;
+      color: #7ea5ff;
+    }
+
+    .feature-card h4 {
+      font-family: "Bricolage Grotesque", sans-serif;
+      margin-bottom: 10px;
+      font-size: 1.15rem;
+      color: var(--text-dark);
+    }
+
+    .feature-card p {
+      color: var(--text-dark-soft);
+      line-height: 1.7;
+      font-size: 0.96rem;
+    }
+
+    .sticky-section .eyebrow,
+    .feature-section .eyebrow {
+      color: rgba(15, 23, 42, 0.58);
+    }
+
+    .payment-section {
+      background: var(--bg-light);
+      color: var(--text-dark);
+      border-top: 1px solid rgba(15, 23, 42, 0.08);
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .payment-head {
+      text-align: center;
+      margin-bottom: 34px;
+    }
+
+    .payment-head p {
+      color: var(--text-dark-soft);
+      max-width: 760px;
+      margin: 14px auto 0;
+      line-height: 1.65;
+    }
+
+    .payment-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 28px;
+      justify-items: center;
+    }
+
+    .card {
+      --card-bg: #ffffff;
+      --card-accent: #7c3aed;
+      --card-accent-rgb: 124, 58, 237;
+      --card-text: #1e293b;
+      --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+      width: 230px;
+      height: 300px;
+      background: var(--card-bg);
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-family: "DM Sans", sans-serif;
+      isolation: isolate;
+    }
+
+    .card--starter {
+      --card-accent: #d4a017;
+      --card-accent-rgb: 212, 160, 23;
+    }
+
+    .card--growth {
+      --card-accent: #2563eb;
+      --card-accent-rgb: 37, 99, 235;
+    }
+
+    .card--scale {
+      --card-accent: #0ea5a4;
+      --card-accent-rgb: 14, 165, 164;
+    }
+
+    .card__shine {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        120deg,
+        rgba(255, 255, 255, 0) 40%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(255, 255, 255, 0) 60%
+      );
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .card__glow {
+      position: absolute;
+      inset: -10px;
+      background: radial-gradient(
+        circle at 50% 0%,
+        rgba(var(--card-accent-rgb), 0.3) 0%,
+        rgba(124, 58, 237, 0) 70%
+      );
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .bg {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      width: calc(100% - 10px);
+      height: calc(100% - 10px);
+      z-index: 2;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(24px);
+      border-radius: 14px;
+      overflow: hidden;
+      outline: 2px solid white;
+    }
+
+    .blob {
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      left: 50%;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      opacity: 1;
+      filter: blur(12px);
+      animation: blob-bounce 5s infinite ease;
+    }
+
+    .blob-1 {
+      background-color: #d4a017;
+    }
+
+    .blob-2 {
+      background-color: #2563eb;
+    }
+
+    .blob-3 {
+      background-color: #0ea5a4;
+    }
+
+    @keyframes blob-bounce {
+      0% {
+        transform: translate(-100%, -100%) translate3d(0, 0, 0);
+      }
+
+      25% {
+        transform: translate(-100%, -100%) translate3d(100%, 0, 0);
+      }
+
+      50% {
+        transform: translate(-100%, -100%) translate3d(100%, 100%, 0);
+      }
+
+      75% {
+        transform: translate(-100%, -100%) translate3d(0, 100%, 0);
+      }
+
+      100% {
+        transform: translate(-100%, -100%) translate3d(0, 0, 0);
+      }
+    }
+
+    .card__content {
+      padding: 1.25em;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75em;
+      position: relative;
+      z-index: 3;
+    }
+
+    .card__badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #10b981;
+      color: white;
+      padding: 0.25em 0.5em;
+      border-radius: 999px;
+      font-size: 0.7em;
+      font-weight: 600;
+      transform: scale(0.8);
+      opacity: 0;
+      transition: all 0.4s ease 0.1s;
+    }
+
+    .card__image {
+      width: 100%;
+      height: 100px;
+      background: linear-gradient(45deg, rgba(var(--card-accent-rgb), 0.55), var(--card-accent));
+      border-radius: 12px;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card__image::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 30%),
+        repeating-linear-gradient(
+          45deg,
+          rgba(var(--card-accent-rgb), 0.18) 0px,
+          rgba(var(--card-accent-rgb), 0.18) 2px,
+          transparent 2px,
+          transparent 4px
+        );
+      opacity: 0.6;
+    }
+
+    .card__text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25em;
+    }
+
+    .card__title {
+      color: var(--card-text);
+      font-size: 1.1em;
+      margin: 0;
+      font-weight: 700;
+      transition: all 0.3s ease;
+      font-family: "Bricolage Grotesque", sans-serif;
+    }
+
+    .card__description {
+      color: var(--card-text);
+      font-size: 0.75em;
+      margin: 0;
+      opacity: 0.7;
+      transition: all 0.3s ease;
+      line-height: 1.5;
+    }
+
+    .card__footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .card__price {
+      color: var(--card-text);
+      font-weight: 700;
+      font-size: 1em;
+      transition: all 0.3s ease;
+    }
+
+    .card__button {
+      width: 28px;
+      height: 28px;
+      background: var(--card-accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      transform: scale(0.9);
+    }
+
+    .card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border-color: rgba(var(--card-accent-rgb), 0.3);
+    }
+
+    .card:hover .card__shine {
+      opacity: 1;
+      animation: shine 3s infinite;
+    }
+
+    .card:hover .card__glow {
+      opacity: 1;
+    }
+
+    .card:hover .card__badge {
+      transform: scale(1);
+      opacity: 1;
+      z-index: 5;
+    }
+
+    .card:hover .card__image {
+      transform: translateY(-5px) scale(1.03);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .card:hover .card__title {
+      color: var(--card-accent);
+      transform: translateX(2px);
+    }
+
+    .card:hover .card__description {
+      opacity: 1;
+      transform: translateX(2px);
+    }
+
+    .card:hover .card__price {
+      color: var(--card-accent);
+      transform: translateX(2px);
+    }
+
+    .card:hover .card__button {
+      transform: scale(1);
+      box-shadow: 0 0 0 4px rgba(var(--card-accent-rgb), 0.25);
+    }
+
+    .card:hover .card__button svg {
+      animation: pulse 1.5s infinite;
+    }
+
+    .card:active {
+      transform: translateY(-5px) scale(0.98);
+    }
+
+    @keyframes shine {
+      0% {
+        background-position: -100% 0;
+      }
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    #contact {
+      background: linear-gradient(180deg, #eef5ff 0%, #edf4ff 100%);
+      color: var(--text-dark);
+    }
+
+    .cta-banner {
+      background: linear-gradient(135deg, #1c48b6 0%, #2563eb 48%, #3b82f6 100%);
+      border-radius: 24px;
+      padding: 70px 40px;
+      text-align: center;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .cta-banner h2 {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: clamp(2rem, 4vw, 3.6rem);
+      line-height: 1.12;
+      margin-bottom: 16px;
+      perspective: 700px;
+    }
+
+    .cta-banner .flip-word {
+      display: inline-block;
+      margin-right: 0.18em;
+      transform-origin: center top;
+      will-change: transform, opacity;
+    }
+
+    .cta-banner p {
+      color: rgba(255, 255, 255, 0.86);
+      margin-bottom: 24px;
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .cta-actions .btn-ghost {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.35);
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .footer {
+      background: #edf4ff;
+      color: var(--text-dark);
+      border-top: 1px solid var(--border-light);
+      padding: 70px 0;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr 1fr;
+      gap: 24px;
+    }
+
+    .footer h5 {
+      font-family: "Bricolage Grotesque", sans-serif;
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+
+    .footer p, .footer li, .footer a {
+      color: var(--text-dark-soft);
+      list-style: none;
+      line-height: 1.9;
+      font-size: 0.95rem;
+    }
+
+    .socials {
+      display: flex;
+      gap: 10px;
+    }
+
+    .socials a {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--border-light);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 1024px) {
+      .feature-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .payment-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .integration-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .integration-media {
+        min-height: 360px;
+      }
+
+      .footer-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        width: calc(100% - 32px);
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        padding-top: calc(var(--nav-h) + 32px);
+      }
+
+      .hero-title {
+        font-size: clamp(2.2rem, 10vw, 3rem);
+      }
+
+      .section {
+        padding: 74px 0;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .payment-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-banner {
+        padding: 56px 24px;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav" id="navbar">
+    <div class="container nav-wrap">
+      <a href="#" class="brand"><img src="assets/anexi_logo_transparent.png" alt="Anexi.ai" class="brand-logo" /></a>
+      <nav class="nav-links">
+        <a href="#integration">Integration</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#features">Features</a>
+        <a href="#payment">Pricing</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a href="signup.html" class="btn btn-primary btn-get-started">Get started</a>
+    </div>
+  </header>
+
+  <section class="hero" id="hero">
+    <div class="hero-media" id="heroMedia">
+      <video class="hero-video" autoplay muted loop playsinline preload="auto">
+        <source src="assets/video.mp4" type="video/mp4" />
+      </video>
+    </div>
+    <div class="container hero-inner">
+      <span class="hero-label">AI INFRASTRUCTURE FOR ORDER TRUST</span>
+      <h1 class="hero-title" id="heroTitle">
+        <span class="word-mask"><span class="hero-word">Anexi</span></span>
+        <span class="word-mask"><span class="hero-word"></span></span>  
+        <span class="word-mask"><span class="hero-word"></span></span>
+        <span class="word-mask"><span class="hero-word">moteur</span></span>
+        <span class="word-mask"><span class="hero-word">d’optimisation</span></span>
+        <span class="word-mask"><span class="hero-word">du</span></span>
+        <span class="word-mask"><span class="hero-word">cashflow</span></span>
+        <span class="word-mask"><span class="hero-word">e-commerce</span></span>
+        <span class="word-mask"><span class="hero-word">tunisien</span></span>
+      </h1>
+      <p class="hero-subtitle" id="heroSubtitle">
+        Anexi.ai analyzes every incoming order, assigns a trust score, runs automated confirmation calls, and executes approve, flag, or reject decisions. Built for Facebook Ads sellers, dropshippers, Shopify and WooCommerce stores, and Cash-on-Delivery operations.
+      </p>
+      <div class="hero-actions" id="heroActions">
+        <a href="signup.html" class="btn btn-primary btn-get-started">Get started</a>
+        <a href="#integration" class="btn btn-ghost">Learn more -></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-overlap" id="integration">
+    <div class="container integration-grid">
+      <figure class="integration-media" id="integrationMedia">
+        <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1400&q=80" alt="Team collaboration around analytics dashboard" />
+        <figcaption class="floating-ui">
+          <strong>Risk-Aware Order Flow</strong>
+          <p>Prioritize trusted orders, block high-risk losses</p>
+        </figcaption>
+      </figure>
+      <div class="integration-text" id="integrationText">
+        <p class="eyebrow">THE CORE E-COMMERCE PROBLEM</p>
+        <h2 class="section-title">Fake orders and no-shows silently destroy margin</h2>
+        <p>
+          Most stores can generate demand, but many cannot reliably verify intent. Invalid numbers, unreachable buyers, and low-intent Cash-on-Delivery orders create return costs, wasted call center time, and ad spend leakage. Anexi connects to Shopify, WooCommerce, Meta Ads, and your existing tools to turn raw orders into verified, prioritized fulfillment decisions.
+        </p>
+        <a href="#" class="btn btn-primary">Start now</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section sticky-section" id="workflow">
+    <div class="container">
+      <div class="sticky-intro">
+        <p class="eyebrow">HOW ANEXI WORKS</p>
+        <h2 class="section-title">From order capture to automated decisioning</h2>
+      </div>
+      <div class="sticky-stack">
+        <article class="sticky-card">
+          <h3>1) AI Call Agent</h3>
+          <p>An intelligent voice agent calls new customers in seconds, confirms address and intent, detects hesitation signals, and logs structured call outcomes for every order.</p>
+        </article>
+        <article class="sticky-card">
+          <h3>2) Behavioral Brain</h3>
+          <p>The risk engine scores each order using behavioral patterns, channel quality, phone consistency, and historical outcomes to estimate fulfillment reliability.</p>
+        </article>
+        <article class="sticky-card">
+          <h3>3) Trust Layer</h3>
+          <p>A cross-order reputation system tracks buyer reliability over time, helping your team recognize trusted repeat customers and recurring risky profiles.</p>
+        </article>
+        <article class="sticky-card">
+          <h3>4) Smart Automation</h3>
+          <p>Decision policies convert scores and call outcomes into actions: auto-confirm low-risk orders, auto-flag edge cases for review, and auto-reject high-risk orders before shipment.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section feature-section" id="features">
+    <div class="container">
+      <div class="feature-head">
+        <p class="eyebrow">PLATFORM CAPABILITIES</p>
+        <h2 class="section-title">Built for high-volume, risk-sensitive commerce operations</h2>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M4 12h16M12 4v16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <h4>Order Intake Intelligence</h4>
+          <p>Every incoming order is enriched with channel context, contact quality, and verification status before any fulfillment cost is committed.</p>
+        </article>
+        <article class="feature-card">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <h4>No-Show Risk Prediction</h4>
+          <p>Behavioral signals and call outcomes identify probable no-shows early so teams can reduce failed delivery attempts and return logistics costs.</p>
+        </article>
+        <article class="feature-card">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M4 17l5-5 4 4 7-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <h4>Customer Reputation Graph</h4>
+          <p>The Trust Layer builds longitudinal reliability profiles to distinguish trustworthy repeat buyers from patterns linked to fraud and fake orders.</p>
+        </article>
+        <article class="feature-card">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <h4>Decision Audit Trail</h4>
+          <p>Each automated decision is recorded with reason codes and supporting data, giving operations and leadership teams full decision transparency.</p>
+        </article>
+        <article class="feature-card">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" stroke="currentColor" stroke-width="2"/></svg>
+          <h4>CRM and Call Center Compatible</h4>
+          <p>Anexi does not replace your CRM or agents. It sits upstream as a trust and decision infrastructure that tells your existing stack which orders deserve fulfillment effort.</p>
+        </article>
+        <article class="feature-card">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M3 7h18M6 3v8M18 3v8M5 13h14v8H5z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <h4>Operations and Finance Impact</h4>
+          <p>Track confirmation rate, accepted-risk mix, rejection savings, and post-shipment outcomes to improve unit economics by campaign and store.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section payment-section" id="security">
+    <div class="container">
+      <div class="payment-head">
+        <p class="eyebrow">TRUST, SECURITY, AND CONTROL</p>
+        <h2 class="section-title">Enterprise-grade safeguards for order and customer data</h2>
+        <p>Anexi is designed for operational reliability: role-based access, protected API connectivity, controlled automation rules, and full traceability for each risk decision. Teams can review why an order was approved, flagged, or rejected and continuously tune policies with confidence.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <h4>Secure Integrations</h4>
+          <p>Token-based connectors and scoped permissions keep commerce and ad platform access limited to required workflows.</p>
+        </article>
+        <article class="feature-card">
+          <h4>Policy Governance</h4>
+          <p>Approval thresholds, exception queues, and operator overrides let you automate aggressively without losing human control.</p>
+        </article>
+        <article class="feature-card">
+          <h4>Actionable Transparency</h4>
+          <p>Every score and action is linked to explicit signals so teams can audit results, explain outcomes, and improve models over time.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+  <section class="section payment-section" id="payment">
+    <div class="container">
+      <div class="payment-head">
+        <p class="eyebrow">PAYMENT PLANS</p>
+        <h2 class="section-title">Choose the plan that fits your order volume and risk complexity</h2>
+        <p>Start with core verification flows, then scale into advanced risk policies, deeper automations, and multi-store decision governance as your operation grows.</p>
+      </div>
+      <div class="payment-grid">
+        <div class="card card--starter">
+          <div class="card__shine"></div>
+          <div class="card__glow"></div>
+          <div class="bg"></div>
+          <div class="blob blob-1"></div>
+          <div class="card__content">
+            <div class="card__badge">Popular</div>
+            <div class="card__image"></div>
+            <div class="card__text">
+              <h4 class="card__title">Starter</h4>
+              <p class="card__description">Essentials AI pour lancer vos premieres automatisations e-commerce.</p>
+            </div>
+            <div class="card__footer">
+              <span class="card__price">$29/mo</span>
+              <a href="signup.html?plan=starter" class="card__button" aria-label="Choose Starter">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
+                  <path d="M8 5l8 7-8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="card card--growth">
+          <div class="card__shine"></div>
+          <div class="card__glow"></div>
+          <div class="bg"></div>
+          <div class="blob blob-2"></div>
+          <div class="card__content">
+            <div class="card__badge">Best value</div>
+            <div class="card__image"></div>
+            <div class="card__text">
+              <h4 class="card__title">Growth</h4>
+              <p class="card__description">Pour les boutiques en croissance avec support et campagnes multicanales.</p>
+            </div>
+            <div class="card__footer">
+              <span class="card__price">$79/mo</span>
+              <a href="signup.html?plan=growth" class="card__button" aria-label="Choose Growth">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
+                  <path d="M8 5l8 7-8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="card card--scale">
+          <div class="card__shine"></div>
+          <div class="card__glow"></div>
+          <div class="bg"></div>
+          <div class="blob blob-3"></div>
+          <div class="card__content">
+            <div class="card__badge">Advanced</div>
+            <div class="card__image"></div>
+            <div class="card__text">
+              <h4 class="card__title">Scale</h4>
+              <p class="card__description">Stack avancee pour equipes operations, acquisition et support a fort volume.</p>
+            </div>
+            <div class="card__footer">
+              <span class="card__price">$149/mo</span>
+              <a href="signup.html?plan=scale" class="card__button" aria-label="Choose Scale">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
+                  <path d="M8 5l8 7-8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="contact">
+    <div class="container">
+      <div class="cta-banner">
+        <h2 id="ctaTitle">
+          <span class="flip-word">Protect</span>
+          <span class="flip-word">every</span>
+          <span class="flip-word">order</span>
+          <span class="flip-word">with</span>
+          <span class="flip-word">decision-ready</span>
+          <span class="flip-word">AI</span>
+        </h2>
+        <p>Deploy Anexi.ai as your order trust infrastructure and give your operations team a clear system to confirm, score, and automate every incoming order.</p>
+        <div class="cta-actions">
+          <a href="signup.html" class="btn btn-primary">Start free trial</a>
+          <a href="signup.html" class="btn btn-ghost">Book a demo</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <h5 class="brand"><img src="assets/anexi_logo_transparent.png" alt="Anexi.ai" class="brand-logo" /></h5>
+        <p>AI infrastructure for e-commerce teams that need trusted orders, lower logistics losses, and consistent decision quality at scale.</p>
+      </div>
+      <div>
+        <h5>Product</h5>
+        <ul>
+          <li><a href="#">Integrations</a></li>
+          <li><a href="#">Automation</a></li>
+          <li><a href="#">Pricing</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Company</h5>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Social</h5>
+        <div class="socials">
+          <a href="#" aria-label="LinkedIn">in</a>
+          <a href="#" aria-label="X">x</a>
+          <a href="#" aria-label="Instagram">ig</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
+
+    const lenis = new Lenis({
+      duration: 1.1,
+      smoothWheel: true,
+      wheelMultiplier: 0.95
+    });
+
+    lenis.on("scroll", ScrollTrigger.update);
+    gsap.ticker.add((time) => lenis.raf(time * 1000));
+    gsap.ticker.lagSmoothing(0);
+
+    const navbar = document.getElementById("navbar");
+    let lastScrollY = window.scrollY;
+    window.addEventListener("scroll", () => {
+      const currentY = window.scrollY;
+      if (currentY > 120 && currentY > lastScrollY + 2) {
+        navbar.classList.add("is-hidden");
+      } else if (currentY < lastScrollY - 2) {
+        navbar.classList.remove("is-hidden");
+      }
+      if (currentY <= 8) {
+        navbar.classList.remove("is-hidden");
+      }
+      lastScrollY = currentY;
+      navbar.classList.toggle("scrolled", window.scrollY > 30);
+    }, { passive: true });
+
+    gsap.set(".hero-word", { yPercent: 110, opacity: 0 });
+    gsap.set("#heroSubtitle, #heroActions", { y: 26, opacity: 0 });
+
+    const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
+    heroTl
+      .to(".hero-word", { yPercent: 0, opacity: 1, duration: 0.88, stagger: 0.08 })
+      .to("#heroSubtitle", { y: 0, opacity: 1, duration: 0.7 }, "-=0.3")
+      .to("#heroActions", { y: 0, opacity: 1, duration: 0.7 }, "-=0.48");
+
+    gsap.to("#heroMedia", {
+      yPercent: 15,
+      ease: "none",
+      scrollTrigger: {
+        trigger: "#hero",
+        start: "top top",
+        end: "bottom top",
+        scrub: true
+      }
+    });
+
+    gsap.to("#heroMedia", {
+      scale: 0.9,
+      filter: "blur(20px)",
+      ease: "none",
+      scrollTrigger: {
+        trigger: "#hero",
+        start: "bottom 85%",
+        end: "bottom top",
+        scrub: 1
+      }
+    });
+
+    gsap.fromTo("#integration", {
+      y: 70
+    }, {
+      y: 0,
+      scrollTrigger: {
+        trigger: "#integration",
+        start: "top 80%",
+        end: "top 40%",
+        scrub: 1
+      }
+    });
+
+    gsap.to("#integrationMedia", {
+      clipPath: "inset(0% 0% 0% 0% round 16px)",
+      duration: 1,
+      ease: "power2.out",
+      scrollTrigger: {
+        trigger: "#integrationMedia",
+        start: "top 80%",
+        toggleActions: "play none none reverse"
+      }
+    });
+
+    gsap.from("#integrationText", {
+      x: 80,
+      opacity: 0,
+      duration: 1,
+      ease: "power3.out",
+      scrollTrigger: {
+        trigger: "#integrationText",
+        start: "top 80%"
+      }
+    });
+
+    const stackCards = gsap.utils.toArray(".sticky-card");
+    stackCards.forEach((card, i) => {
+      const next = stackCards[i + 1];
+      if (!next) return;
+      gsap.to(card, {
+        scale: 0.95,
+        filter: "blur(5px)",
+        ease: "none",
+        scrollTrigger: {
+          trigger: next,
+          start: "top 80%",
+          end: "top 30%",
+          scrub: 1
+        }
+      });
+    });
+
+    gsap.from(".feature-card", {
+      y: 28,
+      opacity: 0,
+      duration: 0.8,
+      stagger: 0.15,
+      ease: "power3.out",
+      scrollTrigger: {
+        trigger: ".feature-grid",
+        start: "top 80%"
+      }
+    });
+
+    gsap.from(".flip-word", {
+      rotateX: 90,
+      opacity: 0,
+      y: 24,
+      duration: 0.9,
+      stagger: 0.07,
+      transformOrigin: "center top",
+      ease: "power3.out",
+      scrollTrigger: {
+        trigger: "#ctaTitle",
+        start: "top 80%"
+      }
+    });
+  </script>
+</body>
+</html>

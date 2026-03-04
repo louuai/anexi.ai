@@ -1,0 +1,1963 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paiement - Anexi.ai</title>
+  <style>
+    :root {
+      --bg: radial-gradient(circle at 10% 10%, #e5efff 0%, #f4f7ff 45%, #eef3ff 100%);
+      --text: #0f172a;
+      --muted: #64748b;
+      --nav-h: 76px;
+      --content-max: 1240px;
+      --bg-light: #f8f8f6;
+      --trust-card-bg: rgba(255, 255, 255, 0.88);
+      --trust-card-border: rgba(16, 55, 84, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: "DM Sans", sans-serif;
+      background: #0a0a0f;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 22px;
+      padding: 0 0 24px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--nav-h);
+      z-index: 20;
+      backdrop-filter: none;
+      background: transparent;
+      border-bottom: 1px solid transparent;
+      transition: transform 0.28s ease, opacity 0.28s ease;
+    }
+
+    
+    body.embed-mode {
+      background: transparent;
+      padding: 0;
+      gap: 0;
+    }
+
+    body.embed-mode .top-nav {
+      display: none;
+    }
+
+    body.embed-mode .checkout-video-wrap,
+    body.embed-mode .hero-bridge {
+      display: none;
+    }
+
+    body.embed-mode .page-shell {
+      padding-top: 0;
+    }
+
+    body.embed-mode .checkout-stage {
+      padding-top: 0;
+      padding-bottom: 0;
+      min-height: auto;
+      overflow: visible;
+    }
+
+    body.embed-mode .checkout-inner {
+      width: min(var(--content-max), calc(100% - 24px));
+      min-height: 650px;
+    }
+
+    body.embed-mode .post-hero-shell {
+      margin-top: 0;
+      border-radius: 0;
+      background: transparent;
+      padding-top: 0;
+      padding-bottom: 0;
+      gap: 12px;
+    }
+
+    body.embed-mode .pay-cta-section,
+    body.embed-mode .pay-footer {
+      display: none;
+    }
+
+    .top-nav-inner {
+      width: min(var(--content-max), calc(100% - 48px));
+      height: 100%;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .nav-brand {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .nav-logo {
+      height: 38px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .top-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-size: 1.24rem;
+      font-weight: 700;
+      color: #000;
+    }
+
+    .top-nav-links a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .top-nav-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      border-radius: 10px;
+      padding: 0.6em 2em;
+      font-weight: 700;
+      color: #fff;
+      background: #111;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+      z-index: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .top-nav-cta::before {
+      content: "";
+      background: linear-gradient(
+        45deg,
+        #ff0000,
+        #ff7300,
+        #fffb00,
+        #48ff00,
+        #00ffd5,
+        #002bff,
+        #7a00ff,
+        #ff00c8,
+        #ff0000
+      );
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      background-size: 400%;
+      z-index: -1;
+      filter: blur(5px);
+      -webkit-filter: blur(5px);
+      width: calc(100% + 4px);
+      height: calc(100% + 4px);
+      animation: glowing-payment-nav-btn 20s linear infinite;
+      transition: opacity 0.3s ease-in-out;
+      border-radius: 10px;
+    }
+
+    .top-nav-cta::after {
+      z-index: -1;
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #222;
+      left: 0;
+      top: 0;
+      border-radius: 10px;
+    }
+
+    @keyframes glowing-payment-nav-btn {
+      0% {
+        background-position: 0 0;
+      }
+      50% {
+        background-position: 400% 0;
+      }
+      100% {
+        background-position: 0 0;
+      }
+    }
+
+    .page-shell {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      padding-top: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .checkout-stage {
+      width: 100%;
+      min-height: 100vh;
+      perspective: 1600px;
+      margin-top: 0;
+      position: relative;
+      overflow: hidden;
+      border-radius: 0;
+      padding: calc(var(--nav-h) + 0px) 0 24px;
+      display: grid;
+      align-items: flex-start;
+    }
+
+    .hero-bridge {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -2px;
+      height: 190px;
+      pointer-events: none;
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .hero-bridge::before {
+      content: "";
+      position: absolute;
+      left: -20%;
+      right: -20%;
+      top: 30px;
+      height: 88px;
+      background:
+        radial-gradient(55% 90% at 50% 50%, rgba(72, 217, 255, 0.42) 0%, rgba(72, 217, 255, 0.08) 42%, transparent 72%),
+        linear-gradient(90deg, rgba(56, 189, 248, 0) 0%, rgba(56, 189, 248, 0.5) 32%, rgba(251, 191, 36, 0.45) 50%, rgba(56, 189, 248, 0.5) 68%, rgba(56, 189, 248, 0) 100%);
+      filter: blur(12px);
+      animation: bridge-flow 7s ease-in-out infinite;
+      opacity: 0.88;
+    }
+
+    .hero-bridge::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(10, 10, 15, 0) 0%, rgba(10, 10, 15, 0.28) 58%, rgba(248, 248, 246, 0.95) 100%);
+    }
+
+    @keyframes bridge-flow {
+      0% {
+        transform: translateX(-4%) scaleX(1);
+        opacity: 0.76;
+      }
+      50% {
+        transform: translateX(4%) scaleX(1.05);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(-4%) scaleX(1);
+        opacity: 0.76;
+      }
+    }
+
+    .checkout-video-wrap {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .checkout-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      filter: none;
+    }
+
+    .checkout-video-wrap::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 8%, rgba(0, 0, 0, 0.18) 46%, rgba(0, 0, 0, 0.05) 100%);
+    }
+
+    .plan-change-section {
+      width: min(var(--content-max), calc(100% - 48px));
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+      border-radius: 24px;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .selected-pack-section {
+      width: min(var(--content-max), calc(100% - 48px));
+      margin-top: -24px;
+      margin-bottom: 18px;
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
+      border-radius: 20px;
+      box-shadow: 0 22px 38px rgba(15, 23, 42, 0.1);
+      padding: 18px 20px;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .selected-pack-heading {
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #3b82f6;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .selected-pack-title {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: 1.45rem;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+
+    .selected-pack-price {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #1d4ed8;
+      margin-bottom: 8px;
+    }
+
+    .selected-pack-meta {
+      font-size: 0.92rem;
+      color: #475569;
+      line-height: 1.55;
+    }
+
+    .selected-pack-features {
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .selected-pack-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      color: #0f172a;
+      font-size: 0.93rem;
+      line-height: 1.4;
+    }
+
+    .selected-pack-features li::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+      flex: 0 0 8px;
+    }
+
+    .pay-cta-section {
+      width: min(var(--content-max), calc(100% - 48px));
+    }
+
+    .pay-cta-banner {
+      background: linear-gradient(135deg, #1c48b6 0%, #2563eb 48%, #3b82f6 100%);
+      border-radius: 24px;
+      padding: 70px 40px;
+      text-align: center;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow: 0 24px 50px rgba(15, 23, 42, 0.24);
+    }
+
+    .pay-cta-banner h2 {
+      font-family: "Bricolage Grotesque", sans-serif;
+      font-size: clamp(2rem, 4vw, 3.6rem);
+      line-height: 1.12;
+      margin-bottom: 16px;
+      color: #071634;
+    }
+
+    .pay-cta-banner p {
+      color: rgba(255, 255, 255, 0.86);
+      margin-bottom: 24px;
+      font-size: 1.08rem;
+    }
+
+    .pay-cta-actions {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .pay-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      padding: 12px 18px;
+    }
+
+    .pay-cta-btn-primary {
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      color: #fff;
+    }
+
+    .pay-cta-btn-ghost {
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .pay-footer {
+      width: min(var(--content-max), calc(100% - 48px));
+      background: rgba(237, 244, 255, 0.9);
+      color: #0f172a;
+      border-top: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 20px;
+      padding: 54px 26px;
+      box-shadow: 0 20px 35px rgba(15, 23, 42, 0.12);
+    }
+
+    .pay-footer-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr 1fr;
+      gap: 24px;
+    }
+
+    .pay-footer h5 {
+      font-family: "Bricolage Grotesque", sans-serif;
+      margin-bottom: 12px;
+      font-size: 1rem;
+    }
+
+    .pay-footer p,
+    .pay-footer li,
+    .pay-footer a {
+      color: rgba(15, 23, 42, 0.72);
+      list-style: none;
+      line-height: 1.9;
+      font-size: 0.95rem;
+      text-decoration: none;
+    }
+
+    .pay-socials {
+      display: flex;
+      gap: 10px;
+    }
+
+    .pay-socials a {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(37, 99, 235, 0.25);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .plan-change-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .plan-change-sub {
+      color: var(--muted);
+      font-size: 0.92rem;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .parallax-wrap {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    .pack-card {
+      --card-bg: var(--trust-card-bg);
+      --card-accent: #7c3aed;
+      --card-accent-rgb: 124, 58, 237;
+      --card-text: #1e293b;
+      --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+      width: 100%;
+      min-height: 300px;
+      background: var(--card-bg);
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--trust-card-border);
+      font-family: "DM Sans", sans-serif;
+      isolation: isolate;
+      will-change: transform;
+      transform-style: preserve-3d;
+    }
+
+    .pack-card--starter {
+      --card-accent: #d4a017;
+      --card-accent-rgb: 212, 160, 23;
+    }
+
+    .pack-card--growth {
+      --card-accent: #2563eb;
+      --card-accent-rgb: 37, 99, 235;
+    }
+
+    .pack-card--scale {
+      --card-accent: #0ea5a4;
+      --card-accent-rgb: 14, 165, 164;
+    }
+
+    .pack-card__shine {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        120deg,
+        rgba(255, 255, 255, 0) 40%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(255, 255, 255, 0) 60%
+      );
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .pack-card__glow {
+      position: absolute;
+      inset: -10px;
+      background: radial-gradient(
+        circle at 50% 0%,
+        rgba(var(--card-accent-rgb), 0.3) 0%,
+        rgba(124, 58, 237, 0) 70%
+      );
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .pack-card__bg {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      width: calc(100% - 10px);
+      height: calc(100% - 10px);
+      z-index: 2;
+      background: var(--trust-card-bg);
+      backdrop-filter: blur(24px);
+      border-radius: 14px;
+      overflow: hidden;
+      outline: 1px solid var(--trust-card-border);
+    }
+
+    .pack-card__blob {
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      left: 50%;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      opacity: 1;
+      filter: blur(12px);
+      animation: blob-bounce 5s infinite ease;
+      background-color: var(--card-accent);
+    }
+
+    @keyframes blob-bounce {
+      0% {
+        transform: translate(-100%, -100%) translate3d(0, 0, 0);
+      }
+      25% {
+        transform: translate(-100%, -100%) translate3d(100%, 0, 0);
+      }
+      50% {
+        transform: translate(-100%, -100%) translate3d(100%, 100%, 0);
+      }
+      75% {
+        transform: translate(-100%, -100%) translate3d(0, 100%, 0);
+      }
+      100% {
+        transform: translate(-100%, -100%) translate3d(0, 0, 0);
+      }
+    }
+
+    .pack-card__content {
+      padding: 1.25em;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75em;
+      position: relative;
+      z-index: 3;
+    }
+
+    .pack-card__badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #10b981;
+      color: white;
+      padding: 0.25em 0.5em;
+      border-radius: 999px;
+      font-size: 0.7em;
+      font-weight: 600;
+      transform: scale(0.8);
+      opacity: 0;
+      transition: all 0.4s ease 0.1s;
+    }
+
+    .pack-card__image {
+      width: 100%;
+      height: 100px;
+      background: linear-gradient(45deg, rgba(var(--card-accent-rgb), 0.55), var(--card-accent));
+      border-radius: 12px;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pack-card__image::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 30%),
+        repeating-linear-gradient(
+          45deg,
+          rgba(var(--card-accent-rgb), 0.18) 0px,
+          rgba(var(--card-accent-rgb), 0.18) 2px,
+          transparent 2px,
+          transparent 4px
+        );
+      opacity: 0.6;
+    }
+
+    .pack-card__text {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25em;
+    }
+
+    .pack-card__title {
+      color: var(--card-text);
+      font-size: 1.4em;
+      margin: 0;
+      font-weight: 700;
+      transition: all 0.3s ease;
+      font-family: "Bricolage Grotesque", sans-serif;
+    }
+
+    .pack-card__price {
+      color: #1d4ed8;
+      font-size: 1.1em;
+      font-weight: 800;
+      margin: 0;
+      transition: all 0.3s ease;
+    }
+
+    .pack-card__description {
+      color: var(--card-text);
+      font-size: 0.85em;
+      margin: 0;
+      opacity: 0.8;
+      transition: all 0.3s ease;
+      line-height: 1.5;
+      min-height: 38px;
+    }
+
+    .pack-card__footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+    }
+
+    .choose-pack-btn {
+      width: auto;
+      flex: 1;
+      border: 0;
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: var(--card-accent);
+      transition: transform 0.25s ease;
+      font-size: 0.86rem;
+    }
+
+    .pack-card__dot {
+      width: 28px;
+      height: 28px;
+      background: var(--card-accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      transition: all 0.3s ease;
+      transform: scale(0.9);
+      box-shadow: 0 0 0 4px rgba(var(--card-accent-rgb), 0.25);
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .pack-card:hover,
+    .pack-card.active {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      border-color: rgba(var(--card-accent-rgb), 0.3);
+    }
+
+    .pack-card:hover .pack-card__shine,
+    .pack-card.active .pack-card__shine {
+      opacity: 1;
+      animation: shine 3s infinite;
+    }
+
+    .pack-card:hover .pack-card__glow,
+    .pack-card.active .pack-card__glow {
+      opacity: 1;
+    }
+
+    .pack-card:hover .pack-card__badge,
+    .pack-card.active .pack-card__badge {
+      transform: scale(1);
+      opacity: 1;
+      z-index: 5;
+    }
+
+    .pack-card:hover .pack-card__image,
+    .pack-card.active .pack-card__image {
+      transform: translateY(-5px) scale(1.03);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .pack-card:hover .pack-card__title,
+    .pack-card.active .pack-card__title {
+      color: var(--card-accent);
+      transform: translateX(2px);
+    }
+
+    .pack-card:hover .pack-card__price,
+    .pack-card.active .pack-card__price {
+      color: var(--card-accent);
+      transform: translateX(2px);
+    }
+
+    .pack-card:hover .pack-card__description,
+    .pack-card.active .pack-card__description {
+      opacity: 1;
+      transform: translateX(2px);
+    }
+
+    .pack-card:hover .pack-card__dot,
+    .pack-card.active .pack-card__dot {
+      transform: scale(1);
+    }
+
+    .pack-card:active {
+      transform: translateY(-5px) scale(0.98);
+    }
+
+    @keyframes shine {
+      0% {
+        background-position: -100% 0;
+      }
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    .checkout-inner {
+      position: relative;
+      min-height: 720px;
+      transform-style: preserve-3d;
+      transition: transform 0.9s ease;
+      z-index: 1;
+      width: min(var(--content-max), calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .post-hero-shell {
+      width: 100%;
+      margin-top: -60px;
+      border-radius: 36px 36px 0 0;
+      background: #f8f8f6;
+      padding: 82px 0 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .checkout-inner.is-confirmed {
+      transform: rotateY(180deg);
+    }
+
+    .checkout-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: grid;
+      justify-items: center;
+      align-items: start;
+    }
+
+    .checkout-face--result {
+      transform: rotateY(180deg);
+    }
+
+    .modal {
+      width: fit-content;
+      height: fit-content;
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
+      box-shadow: 0px 187px 75px rgba(0, 0, 0, 0.01), 0px 105px 63px rgba(0, 0, 0, 0.05), 0px 47px 47px rgba(0, 0, 0, 0.09), 0px 12px 26px rgba(0, 0, 0, 0.1), 0px 0px 0px rgba(0, 0, 0, 0.1);
+      border-radius: 26px;
+      max-width: 1020px;
+      width: 100%;
+    }
+
+    .form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 28px;
+    }
+
+    .payment-content {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .payment-left {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .form-fields {
+      display: grid;
+      gap: 15px;
+    }
+
+    .plan-summary {
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      font-weight: 700;
+      color: #1f2937;
+      font-size: 0.95rem;
+    }
+
+    .plan-summary-meta {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .payment--options {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 33% 34% 33%;
+      gap: 10px;
+      padding: 0;
+      margin: 0;
+    }
+
+    .payment--options button {
+      height: 55px;
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
+      border-radius: 11px;
+      outline: none;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .payment--options button::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+
+    .payment--options button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+    }
+
+    .payment--options button:hover::before {
+      opacity: 1;
+    }
+
+    .pay-chip {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      flex: 0 0 9px;
+    }
+
+    .pay-btn-paypal {
+      color: #003087;
+      border: 1px solid var(--trust-card-border);
+      background: var(--trust-card-bg);
+    }
+
+    .pay-btn-paypal::before {
+      background: linear-gradient(135deg, rgba(0, 48, 135, 0.08), rgba(0, 156, 222, 0.12));
+    }
+
+    .pay-btn-paypal .pay-chip {
+      background: linear-gradient(160deg, #003087, #009cde);
+      box-shadow: 0 0 0 3px rgba(0, 156, 222, 0.18);
+    }
+
+    .pay-btn-apple {
+      color: #111111;
+      border: 1px solid var(--trust-card-border);
+      background: var(--trust-card-bg);
+    }
+
+    .pay-btn-apple::before {
+      background: linear-gradient(135deg, rgba(17, 17, 17, 0.08), rgba(17, 17, 17, 0.02));
+    }
+
+    .pay-btn-apple .pay-chip {
+      background: #111111;
+      box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.14);
+    }
+
+    .pay-btn-google {
+      color: #1f2937;
+      border: 1px solid var(--trust-card-border);
+      background: var(--trust-card-bg);
+    }
+
+    .pay-btn-google::before {
+      background: linear-gradient(
+        135deg,
+        rgba(66, 133, 244, 0.13) 0%,
+        rgba(52, 168, 83, 0.11) 30%,
+        rgba(251, 188, 5, 0.12) 65%,
+        rgba(234, 67, 53, 0.11) 100%
+      );
+    }
+
+    .pay-btn-google .pay-chip {
+      background: conic-gradient(#4285f4 0 25%, #34a853 25% 50%, #fbbc05 50% 75%, #ea4335 75% 100%);
+      box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.12);
+    }
+
+    .separator {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      gap: 10px;
+      color: #8b8e98;
+      margin: 0;
+    }
+
+    .separator > p {
+      word-break: keep-all;
+      display: block;
+      text-align: center;
+      font-weight: 600;
+      font-size: 11px;
+      margin: auto;
+    }
+
+    .separator .line {
+      display: inline-block;
+      width: 100%;
+      height: 1px;
+      border: 0;
+      background-color: #e8e8e8;
+      margin: auto;
+    }
+
+    .credit-card-info--form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .input_container {
+      width: 100%;
+      height: fit-content;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 4fr 2fr;
+      gap: 15px;
+    }
+
+    .split input {
+      width: 100%;
+    }
+
+    .input_label {
+      font-size: 10px;
+      color: #8b8e98;
+      font-weight: 600;
+    }
+
+    .input_field {
+      width: auto;
+      height: 46px;
+      padding: 0 0 0 16px;
+      border-radius: 9px;
+      outline: none;
+      background-color: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
+      transition: all 0.3s cubic-bezier(0.15, 0.83, 0.66, 1);
+    }
+
+    .input_field:focus {
+      border: 1px solid transparent;
+      box-shadow: 0px 0px 0px 2px #242424;
+      background-color: transparent;
+    }
+
+    .purchase--btn {
+      height: 55px;
+      border-radius: 11px;
+      border: 0;
+      outline: none;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      background: linear-gradient(180deg, #363636 0%, #1b1b1b 50%, #000000 100%);
+      box-shadow: 0px 0px 0px 0px #ffffff, 0px 0px 0px 0px #000000;
+      transition: all 0.3s cubic-bezier(0.15, 0.83, 0.66, 1);
+      cursor: pointer;
+    }
+
+    .purchase--btn:hover {
+      box-shadow: 0px 0px 0px 2px #ffffff, 0px 0px 0px 4px #0000003a;
+    }
+
+    .payment-bottom {
+      display: grid;
+      gap: 10px;
+    }
+
+    .live-card-panel {
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
+      border-radius: 14px;
+      padding: 18px;
+      display: grid;
+      gap: 10px;
+      place-items: center;
+      min-height: 292px;
+    }
+
+    .live-title {
+      font-size: 0.84rem;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .input_field::-webkit-outer-spin-button,
+    .input_field::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .input_field[type=number] {
+      -moz-appearance: textfield;
+    }
+
+    .success-panel {
+      width: min(640px, 100%);
+      background: var(--trust-card-bg);
+      border: 1px solid var(--trust-card-border);
+      border-radius: 24px;
+      padding: 26px;
+      box-shadow: 0 30px 60px rgba(15, 23, 42, 0.15);
+      display: grid;
+      gap: 18px;
+      place-items: center;
+    }
+
+    .success-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
+    .success-meta {
+      font-size: 0.95rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .flip-card {
+      background-color: transparent;
+      width: 290px;
+      height: 186px;
+      perspective: 1000px;
+      color: white;
+    }
+
+    .scroll-section {
+      opacity: 0;
+      transform: translateY(56px) scale(0.97);
+      transition: opacity 0.85s ease, transform 0.85s ease;
+      will-change: transform, opacity;
+    }
+
+    .scroll-section.is-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .heading_8264 {
+      position: absolute;
+      letter-spacing: 0.2em;
+      font-size: 0.5em;
+      top: 2em;
+      left: 18.6em;
+    }
+
+    .logo {
+      position: absolute;
+      top: 6.8em;
+      left: 11.7em;
+    }
+
+    .chip {
+      position: absolute;
+      top: 2.3em;
+      left: 1.5em;
+      width: 30px;
+      height: 22px;
+      border-radius: 4px;
+      background: linear-gradient(160deg, #f6cc73, #b8902e);
+    }
+
+    .contactless {
+      position: absolute;
+      top: 3.5em;
+      left: 12.4em;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      opacity: 0.7;
+    }
+
+    .number {
+      position: absolute;
+      font-weight: bold;
+      font-size: 0.6em;
+      top: 8.3em;
+      left: 1.6em;
+      letter-spacing: 0.15em;
+    }
+
+    .valid_thru {
+      position: absolute;
+      font-weight: bold;
+      top: 10.8em;
+      font-size: 0.35em;
+      left: 2.8em;
+      opacity: 0.8;
+    }
+
+    .date_8264 {
+      position: absolute;
+      font-weight: bold;
+      font-size: 0.5em;
+      top: 13.6em;
+      left: 3.2em;
+    }
+
+    .name {
+      position: absolute;
+      font-weight: bold;
+      font-size: 0.5em;
+      top: 16.1em;
+      left: 2em;
+    }
+
+    .strip {
+      position: absolute;
+      width: 15em;
+      height: 1.5em;
+      top: 2.4em;
+      background: repeating-linear-gradient(
+        45deg,
+        #303030,
+        #303030 10px,
+        #202020 10px,
+        #202020 20px
+      );
+    }
+
+    .mstrip {
+      position: absolute;
+      background-color: rgb(255, 255, 255);
+      width: 8em;
+      height: 0.8em;
+      top: 5em;
+      left: 0.8em;
+      border-radius: 2.5px;
+    }
+
+    .sstrip {
+      position: absolute;
+      background-color: rgb(255, 255, 255);
+      width: 4.1em;
+      height: 0.8em;
+      top: 5em;
+      left: 10em;
+      border-radius: 2.5px;
+    }
+
+    .code {
+      font-weight: bold;
+      text-align: center;
+      margin: 0.2em;
+      color: black;
+    }
+
+    .flip-card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.8s;
+      transform-style: preserve-3d;
+    }
+
+    .flip-card:hover .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card.is-back .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card-front, .flip-card-back {
+      box-shadow: 0 8px 14px 0 rgba(0, 0, 0, 0.2);
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border-radius: 1rem;
+    }
+
+    .flip-card-front {
+      background-color: #171717;
+    }
+
+    .flip-card-back {
+      background-color: #171717;
+      transform: rotateY(180deg);
+    }
+
+    .back-link {
+      color: #0f172a;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+      border-bottom: 1px dashed #334155;
+    }
+
+    @media (max-width: 560px) {
+      .top-nav-links {
+        display: none;
+      }
+
+      .checkout-inner {
+        min-height: 760px;
+        width: calc(100% - 32px);
+      }
+
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .payment--options {
+        grid-template-columns: 1fr;
+      }
+
+      .parallax-wrap {
+        grid-template-columns: 1fr;
+      }
+
+      .payment-content {
+        grid-template-columns: 1fr;
+      }
+
+      .selected-pack-section {
+        grid-template-columns: 1fr;
+      }
+
+      .live-card-panel {
+        min-height: 220px;
+      }
+
+      .pay-cta-banner {
+        padding: 56px 24px;
+      }
+
+      .pay-footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .checkout-stage {
+        padding-top: var(--nav-h);
+      }
+
+      .hero-bridge {
+        height: 130px;
+      }
+
+      .post-hero-shell {
+        margin-top: -38px;
+        border-radius: 24px 24px 0 0;
+        padding-top: 58px;
+      }
+
+      .plan-change-section,
+      .selected-pack-section,
+      .pay-cta-section,
+      .pay-footer {
+        width: calc(100% - 32px);
+      }
+    }
+    /* Final card override to match dashboard/trust glass cards */
+    .modal,
+    .plan-summary,
+    .live-card-panel,
+    .success-panel,
+    .plan-change-section,
+    .selected-pack-section,
+    .pack-card,
+    .pack-card__bg,
+    .payment--options button,
+    .input_field {
+      background: var(--trust-card-bg) !important;
+      border-color: var(--trust-card-border) !important;
+      backdrop-filter: blur(20px);
+    }
+  </style>
+</head>
+<body>
+  <header class="top-nav">
+    <div class="top-nav-inner">
+      <a href="index.html" class="nav-brand" aria-label="Anexi.ai Home">
+        <img src="assets/anexi_logo_transparent.png" alt="Anexi.ai" class="nav-logo" />
+      </a>
+      <nav class="top-nav-links">
+        <a href="index.html#integration">Integration</a>
+        <a href="index.html#workflow">Workflow</a>
+        <a href="index.html#payment">Pricing</a>
+        <a href="index.html#contact">Contact</a>
+      </nav>
+      <a href="signup.html" class="top-nav-cta">Get started</a>
+    </div>
+  </header>
+
+  <div class="page-shell">
+    <div class="checkout-stage scroll-section" id="checkoutSection">
+    <div class="checkout-video-wrap" aria-hidden="true">
+      <video class="checkout-video" autoplay muted loop playsinline preload="auto">
+        <source src="assets/video.mp4" type="video/mp4" />
+      </video>
+    </div>
+    <div class="hero-bridge" aria-hidden="true"></div>
+    <div class="checkout-inner" id="checkoutInner">
+      <div class="checkout-face checkout-face--form">
+        <div class="modal">
+          <form class="form" id="paymentForm">
+            <div class="plan-summary" id="planSummary">Plan selection</div>
+            <div class="plan-summary-meta" id="planSummaryMeta">Context not linked</div>
+            <div class="payment-content">
+              <div class="payment-left">
+                <div class="form-fields credit-card-info--form">
+                  <div class="input_container">
+                    <label for="holderName" class="input_label">Card holder full name</label>
+                    <input id="holderName" class="input_field" type="text" placeholder="Enter your full name" required>
+                  </div>
+                  <div class="input_container">
+                    <label for="cardNumber" class="input_label">Card Number</label>
+                    <input id="cardNumber" class="input_field" type="text" inputmode="numeric" placeholder="0000 0000 0000 0000" required>
+                  </div>
+                  <div class="input_container">
+                    <label for="expiryDate" class="input_label">Expiry Date / CVV</label>
+                    <div class="split">
+                      <input id="expiryDate" class="input_field" type="text" placeholder="01/27" required>
+                      <input id="cvv" class="input_field" type="password" inputmode="numeric" placeholder="CVV" required>
+                    </div>
+                  </div>
+                </div>
+                <button class="purchase--btn" type="submit">Confirmer le paiement</button>
+              </div>
+              <div class="live-card-panel">
+                <p class="live-title">Carte en direct</p>
+                <div class="flip-card" id="liveFlipCard">
+                  <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                      <p class="heading_8264">MASTERCARD</p>
+                      <svg class="logo" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 48 48">
+                        <path fill="#ff9800" d="M32 10A14 14 0 1 0 32 38A14 14 0 1 0 32 10Z"></path>
+                        <path fill="#d50000" d="M16 10A14 14 0 1 0 16 38A14 14 0 1 0 16 10Z"></path>
+                        <path fill="#ff3d00" d="M18,24c0,4.755,2.376,8.95,6,11.48c3.624-2.53,6-6.725,6-11.48s-2.376-8.95-6-11.48 C20.376,15.05,18,19.245,18,24z"></path>
+                      </svg>
+                      <div class="chip"></div>
+                      <div class="contactless"></div>
+                      <p class="number" id="liveCardNumberPreview">0000 0000 0000 0000</p>
+                      <p class="valid_thru">VALID THRU</p>
+                      <p class="date_8264" id="liveCardExpiryPreview">00 / 00</p>
+                      <p class="name" id="liveCardNamePreview">CLIENT NAME</p>
+                    </div>
+                    <div class="flip-card-back">
+                      <div class="strip"></div>
+                      <div class="mstrip"></div>
+                      <div class="sstrip">
+                        <p class="code" id="liveCardCvvPreview">***</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="payment-bottom">
+              <div class="separator">
+                <hr class="line">
+                <p>or pay using credit card</p>
+                <hr class="line">
+              </div>
+              <div class="payment--options">
+                <button class="pay-btn-paypal" name="paypal" type="button"><span class="pay-chip" aria-hidden="true"></span>PayPal</button>
+                <button class="pay-btn-apple" name="apple-pay" type="button"><span class="pay-chip" aria-hidden="true"></span>Apple Pay</button>
+                <button class="pay-btn-google" name="google-pay" type="button"><span class="pay-chip" aria-hidden="true"></span>Google Pay</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="checkout-face checkout-face--result">
+        <div class="success-panel">
+          <p class="success-title">Paiement confirme</p>
+          <p class="success-meta" id="successMeta">Votre paiement a ete valide.</p>
+
+          <div class="flip-card">
+            <div class="flip-card-inner">
+              <div class="flip-card-front">
+                <p class="heading_8264">MASTERCARD</p>
+                <svg class="logo" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 48 48">
+                  <path fill="#ff9800" d="M32 10A14 14 0 1 0 32 38A14 14 0 1 0 32 10Z"></path>
+                  <path fill="#d50000" d="M16 10A14 14 0 1 0 16 38A14 14 0 1 0 16 10Z"></path>
+                  <path fill="#ff3d00" d="M18,24c0,4.755,2.376,8.95,6,11.48c3.624-2.53,6-6.725,6-11.48s-2.376-8.95-6-11.48 C20.376,15.05,18,19.245,18,24z"></path>
+                </svg>
+                <div class="chip"></div>
+                <div class="contactless"></div>
+                <p class="number" id="cardNumberPreview">0000 0000 0000 0000</p>
+                <p class="valid_thru">VALID THRU</p>
+                <p class="date_8264" id="cardExpiryPreview">00 / 00</p>
+                <p class="name" id="cardNamePreview">CLIENT NAME</p>
+              </div>
+              <div class="flip-card-back">
+                <div class="strip"></div>
+                <div class="mstrip"></div>
+                <div class="sstrip">
+                  <p class="code" id="cardCvvPreview">***</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <a class="back-link" href="index.html#payment">Retour aux plans</a>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div class="post-hero-shell" id="postHeroShell">
+      <section class="selected-pack-section scroll-section" id="selectedPackSection">
+        <div>
+          <p class="selected-pack-heading">Selected Pack</p>
+          <h3 class="selected-pack-title" id="selectedPackTitle">Starter</h3>
+          <p class="selected-pack-price" id="selectedPackPrice">$29/mo</p>
+          <p class="selected-pack-meta" id="selectedPackMeta">Essentials AI pour lancer vos premieres automatisations e-commerce.</p>
+        </div>
+        <ul class="selected-pack-features" id="selectedPackFeatures">
+          <li>Up to 3 automation workflows</li>
+          <li>Email support and onboarding guides</li>
+          <li>Basic revenue insights dashboard</li>
+        </ul>
+      </section>
+
+      <section class="plan-change-section scroll-section" id="planChangeSection">
+      <h3 class="plan-change-title">Changer de pack avant paiement</h3>
+      <p class="plan-change-sub">Choisis un autre plan si besoin. Le resume du formulaire se met a jour automatiquement.</p>
+      <div class="parallax-wrap" id="parallaxWrap">
+        <article class="pack-card pack-card--starter" data-plan="starter" data-depth="1">
+          <div class="pack-card__shine"></div>
+          <div class="pack-card__glow"></div>
+          <div class="pack-card__bg"></div>
+          <div class="pack-card__blob"></div>
+          <div class="pack-card__content">
+            <div class="pack-card__badge">Popular</div>
+            <div class="pack-card__image"></div>
+            <div class="pack-card__text">
+              <h4 class="pack-card__title">Starter</h4>
+              <p class="pack-card__price">$29/mo</p>
+              <p class="pack-card__description">Essentials AI pour lancer vos premieres automatisations e-commerce.</p>
+            </div>
+            <div class="pack-card__footer">
+              <button class="choose-pack-btn" type="button">Choisir Starter</button>
+              <span class="pack-card__dot" aria-hidden="true">+</span>
+            </div>
+          </div>
+        </article>
+        <article class="pack-card pack-card--growth" data-plan="growth" data-depth="1.3">
+          <div class="pack-card__shine"></div>
+          <div class="pack-card__glow"></div>
+          <div class="pack-card__bg"></div>
+          <div class="pack-card__blob"></div>
+          <div class="pack-card__content">
+            <div class="pack-card__badge">Best value</div>
+            <div class="pack-card__image"></div>
+            <div class="pack-card__text">
+              <h4 class="pack-card__title">Growth</h4>
+              <p class="pack-card__price">$79/mo</p>
+              <p class="pack-card__description">Plan optimise pour les boutiques en croissance multicanale.</p>
+            </div>
+            <div class="pack-card__footer">
+              <button class="choose-pack-btn" type="button">Choisir Growth</button>
+              <span class="pack-card__dot" aria-hidden="true">+</span>
+            </div>
+          </div>
+        </article>
+        <article class="pack-card pack-card--scale" data-plan="scale" data-depth="1.6">
+          <div class="pack-card__shine"></div>
+          <div class="pack-card__glow"></div>
+          <div class="pack-card__bg"></div>
+          <div class="pack-card__blob"></div>
+          <div class="pack-card__content">
+            <div class="pack-card__badge">Advanced</div>
+            <div class="pack-card__image"></div>
+            <div class="pack-card__text">
+              <h4 class="pack-card__title">Scale</h4>
+              <p class="pack-card__price">$149/mo</p>
+              <p class="pack-card__description">Stack complete pour equipes operations, acquisition et support a fort volume.</p>
+            </div>
+            <div class="pack-card__footer">
+              <button class="choose-pack-btn" type="button">Choisir Scale</button>
+              <span class="pack-card__dot" aria-hidden="true">+</span>
+            </div>
+          </div>
+        </article>
+      </div>
+      </section>
+
+      <section class="pay-cta-section scroll-section" id="payCtaSection">
+      <div class="pay-cta-banner">
+        <h2>Scale faster with AI-powered commerce</h2>
+        <p>Start your 14-day free trial and activate your automation stack in less than an hour.</p>
+        <div class="pay-cta-actions">
+          <a href="signup.html" class="pay-cta-btn pay-cta-btn-primary">Start free trial</a>
+          <a href="index.html#contact" class="pay-cta-btn pay-cta-btn-ghost">Book a demo</a>
+        </div>
+      </div>
+      </section>
+
+      <footer class="pay-footer scroll-section" id="payFooterSection">
+      <div class="pay-footer-grid">
+        <div>
+          <h5 class="nav-brand"><img src="assets/anexi_logo_transparent.png" alt="Anexi.ai" class="nav-logo" /></h5>
+          <p>AI SaaS platform helping e-commerce teams convert faster and operate smarter.</p>
+        </div>
+        <div>
+          <h5>Product</h5>
+          <ul>
+            <li><a href="index.html#integration">Integrations</a></li>
+            <li><a href="index.html#features">Automation</a></li>
+            <li><a href="index.html#payment">Pricing</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5>Company</h5>
+          <ul>
+            <li><a href="index.html#contact">About</a></li>
+            <li><a href="index.html#contact">Careers</a></li>
+            <li><a href="index.html#contact">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5>Social</h5>
+          <div class="pay-socials">
+            <a href="#" aria-label="LinkedIn">in</a>
+            <a href="#" aria-label="X">x</a>
+            <a href="#" aria-label="Instagram">ig</a>
+          </div>
+        </div>
+      </div>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = '/api';
+
+    function buildApiUrl(path) {
+      return API_URL + (path.startsWith("/") ? path : ("/" + path));
+    }
+
+    const plans = {
+      starter: {
+        name: "Starter",
+        price: "$29/mo",
+        meta: "Essentials AI pour lancer vos premieres automatisations e-commerce.",
+        features: [
+          "Up to 3 automation workflows",
+          "Email support and onboarding guides",
+          "Basic revenue insights dashboard"
+        ]
+      },
+      growth: {
+        name: "Growth",
+        price: "$79/mo",
+        meta: "Plan optimise pour les boutiques en croissance multicanale.",
+        features: [
+          "Up to 12 automation workflows",
+          "Priority support + campaign sync",
+          "Advanced conversion and retention analytics"
+        ]
+      },
+      scale: {
+        name: "Scale",
+        price: "$149/mo",
+        meta: "Stack complete pour equipes operations, acquisition et support a fort volume.",
+        features: [
+          "Unlimited workflows and channels",
+          "Dedicated success manager",
+          "Enterprise-grade insights and routing"
+        ]
+      }
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let selectedPlanKey = urlParams.get("plan") || "starter";
+    let selectedPlan = plans[selectedPlanKey] || plans.starter;
+
+    const planSummary = document.getElementById("planSummary");
+    const planSummaryMeta = document.getElementById("planSummaryMeta");
+    const paymentForm = document.getElementById("paymentForm");
+    const navbar = document.querySelector(".top-nav");
+    const checkoutInner = document.getElementById("checkoutInner");
+    const checkoutVideo = document.querySelector(".checkout-video");
+    const checkoutSection = document.getElementById("checkoutSection");
+    const planChangeSection = document.getElementById("planChangeSection");
+    const liveFlipCard = document.getElementById("liveFlipCard");
+    const postHeroShell = document.getElementById("postHeroShell");
+    const holderNameInput = document.getElementById("holderName");
+    const cardNumberInput = document.getElementById("cardNumber");
+    const expiryDateInput = document.getElementById("expiryDate");
+    const cvvInput = document.getElementById("cvv");
+    const packCards = Array.from(document.querySelectorAll(".pack-card"));
+    const selectedPackTitle = document.getElementById("selectedPackTitle");
+    const selectedPackPrice = document.getElementById("selectedPackPrice");
+    const selectedPackMeta = document.getElementById("selectedPackMeta");
+    const selectedPackFeatures = document.getElementById("selectedPackFeatures");
+
+    const embedMode = window.self !== window.top || urlParams.get("embed") === "1";
+    if (embedMode) {
+      document.body.classList.add("embed-mode");
+    }
+    let linkedBoutiqueId = null;
+    let linkedCustomerId = null;
+
+    function getAmountFromPlan(planPrice) {
+      return Number(String(planPrice).replace(/[^\d.]/g, "")) || 0;
+    }
+
+    async function resolvePaymentContext() {
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+      if (!token) {
+        planSummaryMeta.textContent = "Not connected: payment will be local preview only.";
+        return;
+      }
+
+      try {
+        const boutiqueResponse = await fetch(buildApiUrl("/boutiques"), {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (!boutiqueResponse.ok) {
+          planSummaryMeta.textContent = "No boutique linked to this account.";
+          return;
+        }
+
+        const boutiques = await boutiqueResponse.json();
+        if (!Array.isArray(boutiques) || !boutiques.length) {
+          planSummaryMeta.textContent = "No boutique found. Create one before checkout.";
+          return;
+        }
+        linkedBoutiqueId = boutiques[0].id;
+
+        const customerResponse = await fetch(buildApiUrl("/boutiques/" + linkedBoutiqueId + "/customers"), {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (!customerResponse.ok) {
+          planSummaryMeta.textContent = "No customer linked to this boutique.";
+          return;
+        }
+
+        const customers = await customerResponse.json();
+        if (!Array.isArray(customers) || !customers.length) {
+          planSummaryMeta.textContent = "No customer found for boutique #" + linkedBoutiqueId + ".";
+          return;
+        }
+
+        linkedCustomerId = customers[0].id;
+        planSummaryMeta.textContent = "Linked Boutique #" + linkedBoutiqueId + " | Customer #" + linkedCustomerId;
+      } catch (err) {
+        planSummaryMeta.textContent = "Payment context unavailable.";
+      }
+    }
+
+    function updatePlanUI(planKey) {
+      selectedPlanKey = plans[planKey] ? planKey : "starter";
+      selectedPlan = plans[selectedPlanKey];
+      planSummary.textContent = "Plan: " + selectedPlan.name + " - " + selectedPlan.price;
+      selectedPackTitle.textContent = selectedPlan.name;
+      selectedPackPrice.textContent = selectedPlan.price;
+      selectedPackMeta.textContent = selectedPlan.meta;
+      selectedPackFeatures.innerHTML = selectedPlan.features
+        .map((feature) => "<li>" + feature + "</li>")
+        .join("");
+      packCards.forEach((card) => {
+        card.classList.toggle("active", card.dataset.plan === selectedPlanKey);
+      });
+      const newUrl = "payment.html?plan=" + selectedPlanKey;
+      window.history.replaceState({}, "", newUrl);
+      localStorage.setItem("pending_plan", selectedPlanKey);
+      localStorage.setItem("onboarding_plan", selectedPlanKey);
+    }
+
+
+
+    updatePlanUI(selectedPlanKey);
+    resolvePaymentContext();
+
+    packCards.forEach((card) => {
+      const btn = card.querySelector(".choose-pack-btn");
+      btn.addEventListener("click", () => updatePlanUI(card.dataset.plan));
+    });
+
+    const revealTargets = Array.from(document.querySelectorAll(".scroll-section"));
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+        }
+      });
+    }, { threshold: 0.2 });
+
+    revealTargets.forEach((el) => revealObserver.observe(el));
+
+    function applyHeroVideoMotion() {
+      if (!checkoutVideo) return;
+      const vh = window.innerHeight || 1;
+      const progress = Math.max(0, Math.min(1, window.scrollY / vh));
+      const translateY = progress * (vh * 0.15);
+
+      const fxStart = vh * 0.55;
+      const fxEnd = vh;
+      const fxProgress = Math.max(0, Math.min(1, (window.scrollY - fxStart) / (fxEnd - fxStart)));
+      const scale = 1 - fxProgress * 0.1;
+      const blur = fxProgress * 20;
+
+      checkoutVideo.style.transform = "translate3d(0," + translateY.toFixed(2) + "px,0) scale(" + scale.toFixed(3) + ")";
+      checkoutVideo.style.filter = "blur(" + blur.toFixed(2) + "px)";
+    }
+
+    function applyIndexLikeSectionTransition() {
+      if (!postHeroShell) return;
+      const vh = window.innerHeight || 1;
+      const start = vh * 0.25;
+      const end = vh * 0.95;
+      const progress = Math.max(0, Math.min(1, (window.scrollY - start) / (end - start)));
+      const translateY = 48 * (1 - progress);
+      const opacity = 0.82 + 0.18 * progress;
+      postHeroShell.style.transform = "translate3d(0," + translateY.toFixed(2) + "px,0)";
+      postHeroShell.style.opacity = opacity.toFixed(3);
+    }
+
+    let lastScrollY = window.scrollY;
+    window.addEventListener("scroll", () => {
+      const currentY = window.scrollY;
+      if (currentY > 120 && currentY > lastScrollY + 2) {
+        navbar.classList.add("is-hidden");
+      } else if (currentY < lastScrollY - 2) {
+        navbar.classList.remove("is-hidden");
+      }
+      if (currentY <= 8) {
+        navbar.classList.remove("is-hidden");
+      }
+      lastScrollY = currentY;
+
+      applyHeroVideoMotion();
+      applyIndexLikeSectionTransition();
+    }, { passive: true });
+
+    applyHeroVideoMotion();
+    applyIndexLikeSectionTransition();
+
+    function sanitizeDigits(value) {
+      return value.replace(/\D/g, "");
+    }
+
+    function formatCardNumber(value) {
+      const digits = sanitizeDigits(value).slice(0, 16).padEnd(16, "0");
+      return digits.match(/.{1,4}/g).join(" ");
+    }
+
+    function formatExpiry(value) {
+      const clean = value.replace(/[^0-9/]/g, "");
+      if (/^\d{2}\/\d{2}$/.test(clean)) return clean;
+      const digits = sanitizeDigits(clean).slice(0, 4);
+      if (digits.length >= 4) return digits.slice(0, 2) + "/" + digits.slice(2, 4);
+      return "00/00";
+    }
+
+    function updateLiveCard() {
+      const holderName = holderNameInput.value.trim() || "CLIENT NAME";
+      const cardNumber = cardNumberInput.value.trim();
+      const expiryDate = expiryDateInput.value.trim();
+      const cvv = cvvInput.value.trim();
+      document.getElementById("liveCardNamePreview").textContent = holderName.toUpperCase().slice(0, 20);
+      document.getElementById("liveCardNumberPreview").textContent = formatCardNumber(cardNumber);
+      document.getElementById("liveCardExpiryPreview").textContent = formatExpiry(expiryDate).replace("/", " / ");
+      document.getElementById("liveCardCvvPreview").textContent = sanitizeDigits(cvv).slice(0, 4) || "***";
+    }
+
+    [holderNameInput, cardNumberInput, expiryDateInput, cvvInput].forEach((input) => {
+      input.addEventListener("input", updateLiveCard);
+    });
+
+    cvvInput.addEventListener("focus", () => {
+      liveFlipCard.classList.add("is-back");
+    });
+
+    cvvInput.addEventListener("blur", () => {
+      liveFlipCard.classList.remove("is-back");
+    });
+
+    updateLiveCard();
+
+    paymentForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const holderName = holderNameInput.value.trim() || "CLIENT NAME";
+      const cardNumber = cardNumberInput.value.trim();
+      const expiryDate = expiryDateInput.value.trim();
+      const cvv = cvvInput.value.trim();
+
+      const digits = sanitizeDigits(cardNumber);
+      if (digits.length < 12) {
+        alert("Numero de carte invalide.");
+        return;
+      }
+      if (sanitizeDigits(cvv).length < 3) {
+        alert("CVV invalide.");
+        return;
+      }
+
+      document.getElementById("cardNamePreview").textContent = holderName.toUpperCase().slice(0, 20);
+      document.getElementById("cardNumberPreview").textContent = formatCardNumber(cardNumber);
+      document.getElementById("cardExpiryPreview").textContent = formatExpiry(expiryDate).replace("/", " / ");
+      document.getElementById("cardCvvPreview").textContent = sanitizeDigits(cvv).slice(0, 4);
+      document.getElementById("successMeta").textContent =
+        "Paiement confirme pour le plan " + selectedPlan.name + " (" + selectedPlan.price + ") au nom de " + holderName + ".";
+
+      checkoutInner.classList.add("is-confirmed");
+
+      const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+      if (!token || !linkedBoutiqueId || !linkedCustomerId) return;
+
+      fetch(buildApiUrl("/payments/checkout"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({
+          boutique_id: linkedBoutiqueId,
+          customer_id: linkedCustomerId,
+          plan: selectedPlan.name.toLowerCase(),
+          amount: getAmountFromPlan(selectedPlan.price),
+          payment_method: "card"
+        })
+      }).catch(() => {
+        // Keep UX smooth even if API call fails.
+      });
+    });
+  </script>
+</body>
+</html>
+

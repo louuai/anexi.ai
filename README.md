@@ -4,7 +4,8 @@ Plateforme SaaS pour automatiser les operations e-commerce.
 
 ## Structure
 - `anexi-backend/`: API FastAPI + base de donnees
-- `frontend/`: pages HTML/CSS/JS
+- `frontend/`: ancien frontend HTML/CSS/JS (legacy)
+- `frontend-react/`: frontend principal React (Vite + Nginx en Docker)
 - `microservices/`: gateway + domain services
 - `observability/`: Prometheus, Grafana dashboards, provisioning
 
@@ -40,6 +41,9 @@ docker compose -f docker-compose.microservices.yml logs -f
 
 # rerun safe migrations
 docker compose -f docker-compose.microservices.yml run --rm db-migrate
+
+# rebuild frontend react
+docker compose -f docker-compose.microservices.yml build frontend
 ```
 
 ## Repository

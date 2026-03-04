@@ -91,15 +91,19 @@ services:
 
   # Frontend Nginx Server
   frontend:
-    profiles: ["legacy"]
-    image: nginx:alpine
+    profiles: ["monolith"]
+    build:
+      context: .
+      dockerfile: frontend-react/Dockerfile
     container_name: anexi_frontend
     restart: unless-stopped
     ports:
       - "3000:80"
-    volumes:
-      - ./frontend:/usr/share/nginx/html:ro
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    environment:
+      API_UPSTREAM: backend
+    depends_on:
+      backend:
+        condition: service_started
 
 volumes:
   postgres_data:

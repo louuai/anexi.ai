@@ -81,6 +81,7 @@ Health checks:
 4. Open Grafana:
    - `http://localhost:3000` (default: `admin` / `admin`)
 5. Smoke test:
+   - Login admin bootstrap: `admin@anexi.local` / `Admin12345!` unless overridden with `DEFAULT_ADMIN_*` env vars
    - `POST /auth/signup`
    - `POST /auth/login`
    - `POST /boutiques/`

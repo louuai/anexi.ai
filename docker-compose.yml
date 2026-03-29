@@ -14,7 +14,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -109,3 +109,4 @@ services:
 
 volumes:
   postgres_data:
+    name: ${POSTGRES_MONOLITH_VOLUME:-anexi_ai_complete_postgres_data}

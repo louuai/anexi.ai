@@ -1,7 +1,7 @@
 x-observability-env: &observability-env
   LOG_LEVEL: INFO
   OBS_TRACING_ENABLED: "true"
-  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
 
 services:
   postgres:
@@ -15,7 +15,7 @@ services:
       POSTGRES_PASSWORD: louaiouni05062001
       POSTGRES_DB: anexi
     volumes:
-      - postgres_ms_data:/var/lib/postgresql/data
+      - postgres_ms_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d anexi"]
       interval: 10s
@@ -42,7 +42,7 @@ services:
     container_name: anexi_ms_migrate
     restart: "no"
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@host.docker.internal:5433/anexi
+      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@postgres:5432/anexi
       <<: *observability-env
       OTEL_SERVICE_NAME: db-migrate
     volumes:
@@ -52,6 +52,29 @@ services:
         condition: service_healthy
     command: python scripts/migrate_safe.py
 
+  bootstrap-admin:
+    build:
+      context: ./anexi-backend
+      dockerfile: Dockerfile
+    container_name: anexi_ms_bootstrap_admin
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@postgres:5432/anexi
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL:-admin@anexi.local}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-Admin12345!}
+      DEFAULT_ADMIN_FULL_NAME: ${DEFAULT_ADMIN_FULL_NAME:-Platform Admin}
+      DEFAULT_ADMIN_ROLE: ${DEFAULT_ADMIN_ROLE:-founder}
+      <<: *observability-env
+      OTEL_SERVICE_NAME: bootstrap-admin
+    volumes:
+      - ./anexi-backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    command: python scripts/bootstrap_admin.py
+
   auth-service:
     build:
       context: ./anexi-backend
@@ -59,7 +82,7 @@ services:
     container_name: anexi_auth_service
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@host.docker.internal:5433/anexi
+      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@postgres:5432/anexi
       FRONTEND_BASE_URL: http://localhost:8080
       SECRET_KEY: anexi-super-secret-key-change-in-production-2024
       ALGORITHM: HS256
@@ -78,6 +101,8 @@ services:
         condition: service_healthy
       db-migrate:
         condition: service_completed_successfully
+      bootstrap-admin:
+        condition: service_completed_successfully
     command: uvicorn microservices.services.auth_service.main:app --host 0.0.0.0 --port 8000
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
@@ -92,7 +117,7 @@ services:
     container_name: anexi_orders_service
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@host.docker.internal:5433/anexi
+      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@postgres:5432/anexi
       SECRET_KEY: anexi-super-secret-key-change-in-production-2024
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
@@ -124,7 +149,7 @@ services:
     container_name: anexi_trust_service
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@host.docker.internal:5433/anexi
+      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@postgres:5432/anexi
       SECRET_KEY: anexi-super-secret-key-change-in-production-2024
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
@@ -156,7 +181,7 @@ services:
     container_name: anexi_analytics_service
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@host.docker.internal:5433/anexi
+      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@postgres:5432/anexi
       SECRET_KEY: anexi-super-secret-key-change-in-production-2024
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
@@ -188,7 +213,7 @@ services:
     container_name: anexi_payments_service
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@host.docker.internal:5433/anexi
+      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@postgres:5432/anexi
       SECRET_KEY: anexi-super-secret-key-change-in-production-2024
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
@@ -223,7 +248,7 @@ services:
     container_name: anexi_ms_worker
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@host.docker.internal:5433/anexi
+      DATABASE_URL: postgresql+psycopg2://postgres:louaiouni05062001@postgres:5432/anexi
       SECRET_KEY: anexi-super-secret-key-change-in-production-2024
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
@@ -245,10 +270,11 @@ services:
         condition: service_completed_successfully
     command: celery -A app.workers.celery_app.celery_app worker --loglevel=info --pool=solo
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9100/metrics', timeout=3)"]
+      test: ["CMD", "python", "-c", "import redis, os; r = redis.from_url(os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')); r.ping()"]
       interval: 20s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   api-gateway:
     build:
@@ -289,13 +315,34 @@ services:
       retries: 5
 
   jaeger:
-    image: jaegertracing/all-in-one:1.58
+    image: jaegertracing/all-in-one:1.76.0
     container_name: anexi_jaeger
     restart: unless-stopped
     ports:
       - "16686:16686"
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
+      METRICS_STORAGE_TYPE: prometheus
+      PROMETHEUS_SERVER_URL: http://prometheus:9090
+      PROMETHEUS_QUERY_SUPPORT_SPANMETRICS_CONNECTOR: "true"
+      PROMETHEUS_QUERY_NAMESPACE: traces_span_metrics
+      PROMETHEUS_QUERY_NORMALIZE_CALLS: "true"
+      PROMETHEUS_QUERY_NORMALIZE_DURATION: "true"
+    command:
+      - --query.ui-config=/etc/jaeger/ui-config.json
+    volumes:
+      - ./observability/jaeger/ui-config.json:/etc/jaeger/ui-config.json:ro
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.109.0
+    container_name: anexi_otel_collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./observability/otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    depends_on:
+      jaeger:
+        condition: service_started
 
   redis-exporter:
     image: oliver006/redis_exporter:v1.62.0
@@ -308,7 +355,7 @@ services:
         condition: service_healthy
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    image: gcr.io/cadvisor/cadvisor:v0.52.1
     container_name: anexi_cadvisor
     restart: unless-stopped
     privileged: true
@@ -334,6 +381,8 @@ services:
         condition: service_healthy
       worker:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
 
   grafana:
     image: grafana/grafana:11.1.4
@@ -372,6 +421,7 @@ services:
 
 volumes:
   postgres_ms_data:
+    name: ${POSTGRES_RUNTIME_VOLUME:-anexi_ai_complete_postgres_ms_data}
   redis_ms_data:
   prometheus_data:
   grafana_data:

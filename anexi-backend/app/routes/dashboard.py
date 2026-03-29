@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import User, Order, Boutique, Customer, AIDecision
+from app.modules.events.models import CustomerState, EventRecord, MerchantIntegration
 from app.routes.auth import get_current_user
 from app.utils.tenant import require_tenant_id
 
@@ -184,3 +185,158 @@ def get_revenue_chart(
         current_date += timedelta(days=1)
 
     return {"labels": labels, "data": revenue_data}
+
+
+@router.get("/event-intelligence")
+def get_event_intelligence(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tenant_id = require_tenant_id(current_user.tenant_id)
+    merchant_id = current_user.id
+    now = datetime.utcnow()
+    today = now.date()
+    last_24h = now - timedelta(hours=24)
+
+    events_today = (
+        db.query(func.count(EventRecord.id))
+        .filter(
+            EventRecord.tenant_id == tenant_id,
+            EventRecord.merchant_id == merchant_id,
+            func.date(EventRecord.timestamp) == today,
+        )
+        .scalar()
+        or 0
+    )
+    events_last_24h = (
+        db.query(func.count(EventRecord.id))
+        .filter(
+            EventRecord.tenant_id == tenant_id,
+            EventRecord.merchant_id == merchant_id,
+            EventRecord.timestamp >= last_24h,
+        )
+        .scalar()
+        or 0
+    )
+
+    by_source_rows = (
+        db.query(EventRecord.source_channel, func.count(EventRecord.id))
+        .filter(EventRecord.tenant_id == tenant_id, EventRecord.merchant_id == merchant_id)
+        .group_by(EventRecord.source_channel)
+        .all()
+    )
+    events_by_source = {str(source): int(total) for source, total in by_source_rows}
+
+    snapshots = (
+        db.query(CustomerState)
+        .filter(
+            CustomerState.tenant_id == tenant_id,
+            CustomerState.merchant_id == merchant_id,
+        )
+        .all()
+    )
+    total_customers = len(snapshots)
+    high_trust_customers = sum(1 for row in snapshots if float(row.trust_score or 0.0) >= 75.0)
+    low_trust_customers = sum(1 for row in snapshots if float(row.trust_score or 0.0) < 40.0)
+    fraud_risk_customers = sum(1 for row in snapshots if float(row.trust_score or 0.0) < 25.0)
+
+    def _serialize(rows: list[EventRecord]) -> list[dict]:
+        return [
+            {
+                "event_type": row.event_type,
+                "customer_id": row.customer_id,
+                "source": row.source_platform,
+                "timestamp": row.timestamp,
+            }
+            for row in rows
+        ]
+
+    latest_events = (
+        db.query(EventRecord)
+        .filter(EventRecord.tenant_id == tenant_id, EventRecord.merchant_id == merchant_id)
+        .order_by(EventRecord.timestamp.desc(), EventRecord.id.desc())
+        .limit(10)
+        .all()
+    )
+    latest_purchases = (
+        db.query(EventRecord)
+        .filter(
+            EventRecord.tenant_id == tenant_id,
+            EventRecord.merchant_id == merchant_id,
+            EventRecord.event_type == "customer_purchase",
+        )
+        .order_by(EventRecord.timestamp.desc(), EventRecord.id.desc())
+        .limit(10)
+        .all()
+    )
+    latest_cancellations = (
+        db.query(EventRecord)
+        .filter(
+            EventRecord.tenant_id == tenant_id,
+            EventRecord.merchant_id == merchant_id,
+            EventRecord.event_type.in_(("order_cancelled", "order_refunded")),
+        )
+        .order_by(EventRecord.timestamp.desc(), EventRecord.id.desc())
+        .limit(10)
+        .all()
+    )
+
+    integrations = (
+        db.query(MerchantIntegration)
+        .filter(MerchantIntegration.tenant_id == tenant_id, MerchantIntegration.merchant_id == merchant_id)
+        .all()
+    )
+    integration_map = {row.connector_type: row for row in integrations}
+    integration_status = {
+        "shopify_connected": bool(integration_map.get("shopify") and integration_map["shopify"].status == "connected"),
+        "webhook_active": bool(integration_map.get("webhook") and integration_map["webhook"].status == "connected"),
+        "pixel_active": bool(
+            integration_map.get("tracking_script") and integration_map["tracking_script"].status == "connected"
+        ),
+    }
+
+    return {
+        "event_activity": {
+            "events_today": int(events_today),
+            "events_last_24h": int(events_last_24h),
+            "events_by_source": events_by_source,
+        },
+        "customer_intelligence": {
+            "total_customers": total_customers,
+            "high_trust_customers": high_trust_customers,
+            "low_trust_customers": low_trust_customers,
+            "fraud_risk_customers": fraud_risk_customers,
+        },
+        "timeline_activity": {
+            "latest_events": _serialize(latest_events),
+            "latest_purchases": _serialize(latest_purchases),
+            "latest_cancellations": _serialize(latest_cancellations),
+        },
+        "integration_status": integration_status,
+    }
+
+
+@router.get("/live-event-feed")
+def get_live_event_feed(
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tenant_id = require_tenant_id(current_user.tenant_id)
+    merchant_id = current_user.id
+    rows = (
+        db.query(EventRecord)
+        .filter(EventRecord.tenant_id == tenant_id, EventRecord.merchant_id == merchant_id)
+        .order_by(EventRecord.timestamp.desc(), EventRecord.id.desc())
+        .limit(max(1, min(limit, 200)))
+        .all()
+    )
+    return [
+        {
+            "event_type": row.event_type,
+            "customer_id": row.customer_id,
+            "source": row.source_platform,
+            "timestamp": row.timestamp,
+        }
+        for row in rows
+    ]

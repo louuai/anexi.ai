@@ -16,6 +16,61 @@ function enforceDashboardAuth() {
     return true;
 }
 
+const SECTION_THEME_MAP = {
+    dashboard: { accent: '#3b82f6', soft: 'rgba(59, 130, 246, 0.22)', soft2: 'rgba(59, 130, 246, 0.12)', glow: 'rgba(59, 130, 246, 0.32)' },
+    profile: { accent: '#14b8a6', soft: 'rgba(20, 184, 166, 0.22)', soft2: 'rgba(20, 184, 166, 0.12)', glow: 'rgba(20, 184, 166, 0.32)' },
+    orders: { accent: '#2563eb', soft: 'rgba(37, 99, 235, 0.22)', soft2: 'rgba(37, 99, 235, 0.12)', glow: 'rgba(37, 99, 235, 0.32)' },
+    customers: { accent: '#06b6d4', soft: 'rgba(6, 182, 212, 0.22)', soft2: 'rgba(6, 182, 212, 0.12)', glow: 'rgba(6, 182, 212, 0.32)' },
+    boutiques: { accent: '#0ea5e9', soft: 'rgba(14, 165, 233, 0.22)', soft2: 'rgba(14, 165, 233, 0.12)', glow: 'rgba(14, 165, 233, 0.32)' },
+    trust: { accent: '#8b5cf6', soft: 'rgba(139, 92, 246, 0.22)', soft2: 'rgba(139, 92, 246, 0.12)', glow: 'rgba(139, 92, 246, 0.32)' },
+    analytics: { accent: '#10b981', soft: 'rgba(16, 185, 129, 0.22)', soft2: 'rgba(16, 185, 129, 0.12)', glow: 'rgba(16, 185, 129, 0.32)' },
+    payment: { accent: '#f59e0b', soft: 'rgba(245, 158, 11, 0.22)', soft2: 'rgba(245, 158, 11, 0.12)', glow: 'rgba(245, 158, 11, 0.32)' },
+    settings: { accent: '#64748b', soft: 'rgba(100, 116, 139, 0.22)', soft2: 'rgba(100, 116, 139, 0.12)', glow: 'rgba(100, 116, 139, 0.32)' },
+};
+
+let revealObserver = null;
+
+function applySectionTheme(sectionName) {
+    const theme = SECTION_THEME_MAP[sectionName] || SECTION_THEME_MAP.dashboard;
+    const root = document.documentElement;
+    root.style.setProperty('--dashboard-accent', theme.accent);
+    root.style.setProperty('--dashboard-accent-soft', theme.soft);
+    root.style.setProperty('--dashboard-accent-soft-2', theme.soft2);
+    root.style.setProperty('--dashboard-accent-glow', theme.glow);
+}
+
+function applyScrollReveal(scope = document) {
+    if (!revealObserver) {
+        revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    revealObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+    }
+
+    const selectors = [
+        '.stat-card',
+        '.chart-container',
+        '.action-card',
+        '.dashboard-intel-shell',
+        '.dashboard-intel-card',
+        '.event-list li',
+        '.integration-card',
+        '.integration-inline-block',
+        '.section-placeholder',
+    ];
+    scope.querySelectorAll(selectors.join(',')).forEach((el) => {
+        if (el.classList.contains('in-view')) return;
+        if (!el.classList.contains('reveal-item')) {
+            el.classList.add('reveal-item');
+        }
+        revealObserver.observe(el);
+    });
+}
+
 function switchDashboardSection(sectionName) {
     const sectionId = `section-${sectionName}`;
     const target = document.getElementById(sectionId);
@@ -28,13 +83,14 @@ function switchDashboardSection(sectionName) {
     document.querySelectorAll('.sidebar-nav .nav-item').forEach((item) => {
         item.classList.toggle('active', item.dataset.section === sectionName);
     });
+    applySectionTheme(sectionName);
 
     const titleEl = document.getElementById('sectionTitle');
     const subtitleEl = document.getElementById('sectionSubtitle');
     if (titleEl && subtitleEl) {
         const map = {
             dashboard: ['Dashboard', "Welcome back! Here's what's happening today."],
-            profile: ['Profile', 'Manage personal info, security, notifications and system settings.'],
+            profile: ['Profile', 'Manage personal info, security, notifications, system settings and integrations.'],
             orders: ['Orders', 'Manage and track your orders in one place.'],
             customers: ['Customers', 'Review customer records and engagement status.'],
             boutiques: ['Boutiques', 'Manage connected stores and channels.'],
@@ -54,6 +110,7 @@ function switchDashboardSection(sectionName) {
     if (sectionName === 'analytics') {
         loadAnalyticsSection();
     }
+    applyScrollReveal(target);
 }
 
 // Guard immediate access before the rest of the dashboard logic runs.
@@ -160,6 +217,7 @@ function parseJwt(token) {
 
 let dashboardUserRecord = null;
 let profileState = null;
+let integrationsState = null;
 
 function getInitials(text) {
     const source = (text || '').trim();
@@ -288,6 +346,167 @@ function showProfileMessage(message, tone = 'info') {
     }
 }
 
+function fmtTs(value) {
+    if (!value) return '-';
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return '-';
+    return dt.toLocaleString();
+}
+
+function integrationLabel(connectorType) {
+    const labels = {
+        shopify: 'Shopify',
+        woocommerce: 'WooCommerce',
+        webhook: 'Webhook',
+        api: 'API',
+        tracking_script: 'Tracking Script',
+    };
+    return labels[connectorType] || connectorType;
+}
+
+async function fetchIntegrationsOverview() {
+    const response = await fetch('/api/integrations', { headers: authJsonHeaders() });
+    if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.detail || 'Failed to load integrations');
+    }
+    return response.json();
+}
+
+async function connectIntegration(connectorType, payload) {
+    const response = await fetch(`/api/integrations/${encodeURIComponent(connectorType)}/connect`, {
+        method: 'POST',
+        headers: authJsonHeaders(),
+        body: JSON.stringify(payload || {}),
+    });
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || 'Connection failed');
+    }
+    return response.json();
+}
+
+function renderIntegrationsCards(data) {
+    const container = document.getElementById('integrationsGrid');
+    if (!container) return;
+    const items = Array.isArray(data?.items) ? data.items : [];
+    container.innerHTML = items.map((item) => {
+        const connected = String(item.status || '').toLowerCase() === 'connected';
+        const statusClass = connected ? 'connected' : 'not-connected';
+        const statusText = connected ? 'connected' : 'not connected';
+        return `
+            <div class="integration-card">
+                <div class="integration-head">
+                    <div class="integration-title">${escapeHtml(integrationLabel(item.connector_type))}</div>
+                    <span class="integration-status-badge ${statusClass}">${escapeHtml(statusText)}</span>
+                </div>
+                <div class="integration-meta">
+                    Connected at: ${escapeHtml(fmtTs(item.connected_at))}<br/>
+                    Last event: ${escapeHtml(fmtTs(item.last_event_at))}<br/>
+                    Events received: ${escapeHtml(item.events_received ?? 0)}
+                </div>
+                <div class="integration-actions">
+                    <button class="profile-btn primary" type="button" data-integration-connect="${escapeHtml(item.connector_type)}">Connect</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.querySelectorAll('[data-integration-connect]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const type = btn.getAttribute('data-integration-connect') || '';
+            try {
+                await connectIntegration(type, {});
+                await loadIntegrationsPanel();
+                showProfileMessage(`${integrationLabel(type)} connected.`, 'success');
+            } catch (error) {
+                showProfileMessage(error.message || 'Connection failed.', 'error');
+            }
+        });
+    });
+}
+
+function renderIntegrationDetails(data) {
+    const webhookUrl = document.getElementById('webhookUrlValue');
+    const webhookSecret = document.getElementById('webhookSecretValue');
+    const trackingScript = document.getElementById('trackingScriptValue');
+    const trackingStatus = document.getElementById('trackingStatusMeta');
+    const shopifyMeta = document.getElementById('shopifyConnectMeta');
+
+    if (webhookUrl) webhookUrl.textContent = data?.webhook_url || 'https://api.anexi.ai/events/webhook';
+    if (trackingScript) trackingScript.textContent = data?.tracking_script || '<script src="https://cdn.anexi.ai/pixel.js"></script>';
+
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const getItem = (key) => items.find((x) => x.connector_type === key);
+    const webhook = getItem('webhook');
+    const pixel = getItem('tracking_script');
+    const shopify = getItem('shopify');
+
+    if (webhookSecret) webhookSecret.textContent = webhook?.webhook_secret || '-';
+    if (trackingStatus) {
+        const active = String(pixel?.status || '').toLowerCase() === 'connected';
+        trackingStatus.textContent = `Pixel status: ${active ? 'active' : 'inactive'} | Last activity: ${fmtTs(pixel?.last_event_at)}`;
+    }
+    if (shopifyMeta) {
+        const isConnected = String(shopify?.status || '').toLowerCase() === 'connected';
+        if (!isConnected) {
+            shopifyMeta.textContent = 'Store not connected.';
+        } else {
+            const shopUrl = shopify?.config?.shop_url || '-';
+            const webhookActive = shopify?.config?.webhook_active ? 'yes' : 'no';
+            shopifyMeta.textContent = `Store connected: ${shopUrl} | Webhook active: ${webhookActive} | Events received: ${shopify?.events_received ?? 0}`;
+        }
+    }
+}
+
+async function loadIntegrationsPanel() {
+    try {
+        integrationsState = await fetchIntegrationsOverview();
+        renderIntegrationsCards(integrationsState);
+        renderIntegrationDetails(integrationsState);
+    } catch (error) {
+        showProfileMessage(error.message || 'Unable to load integrations.', 'error');
+    }
+}
+
+async function handleShopifyConnectSubmit(e) {
+    e.preventDefault();
+    const shop_url = (document.getElementById('shopifyShopUrl')?.value || '').trim();
+    const api_key = (document.getElementById('shopifyApiKey')?.value || '').trim();
+    const webhook_secret = (document.getElementById('shopifyWebhookSecret')?.value || '').trim();
+    if (!shop_url || !api_key || !webhook_secret) {
+        showProfileMessage('Shop URL, API key and webhook secret are required for Shopify.', 'error');
+        return;
+    }
+    try {
+        await connectIntegration('shopify', { shop_url, api_key, webhook_secret });
+        await loadIntegrationsPanel();
+        showProfileMessage('Shopify connected successfully.', 'success');
+    } catch (error) {
+        showProfileMessage(error.message || 'Failed to connect Shopify.', 'error');
+    }
+}
+
+async function activateWebhookIntegration() {
+    try {
+        await connectIntegration('webhook', {});
+        await loadIntegrationsPanel();
+        showProfileMessage('Webhook activated.', 'success');
+    } catch (error) {
+        showProfileMessage(error.message || 'Failed to activate webhook.', 'error');
+    }
+}
+
+async function activateTrackingIntegration() {
+    try {
+        await connectIntegration('tracking_script', {});
+        await loadIntegrationsPanel();
+        showProfileMessage('Tracking script activated.', 'success');
+    } catch (error) {
+        showProfileMessage(error.message || 'Failed to activate tracking script.', 'error');
+    }
+}
+
 function updateAvatarUI() {
     const preview = document.getElementById('profileAvatarPreview');
     const image = document.getElementById('profileAvatarImage');
@@ -383,7 +602,11 @@ function initProfileSection() {
 
     document.querySelectorAll('.profile-nav-item[data-profile-tab]').forEach((item) => {
         item.addEventListener('click', () => {
-            activateProfileTab(item.dataset.profileTab || 'personal');
+            const tab = item.dataset.profileTab || 'personal';
+            activateProfileTab(tab);
+            if (tab === 'integrations') {
+                loadIntegrationsPanel();
+            }
         });
     });
 
@@ -558,6 +781,47 @@ function initProfileSection() {
             }
         });
     }
+
+    const shopifyConnectForm = document.getElementById('shopifyConnectForm');
+    if (shopifyConnectForm) {
+        shopifyConnectForm.addEventListener('submit', handleShopifyConnectSubmit);
+    }
+
+    const connectWebhookBtn = document.getElementById('connectWebhookBtn');
+    if (connectWebhookBtn) {
+        connectWebhookBtn.addEventListener('click', activateWebhookIntegration);
+    }
+
+    const connectTrackingBtn = document.getElementById('connectTrackingBtn');
+    if (connectTrackingBtn) {
+        connectTrackingBtn.addEventListener('click', activateTrackingIntegration);
+    }
+
+    const copyWebhookUrlBtn = document.getElementById('copyWebhookUrlBtn');
+    if (copyWebhookUrlBtn) {
+        copyWebhookUrlBtn.addEventListener('click', async () => {
+            const value = document.getElementById('webhookUrlValue')?.textContent || '';
+            try {
+                await navigator.clipboard.writeText(value);
+                showProfileMessage('Webhook URL copied.', 'success');
+            } catch (_) {
+                showProfileMessage('Unable to copy webhook URL.', 'error');
+            }
+        });
+    }
+
+    const copyTrackingScriptBtn = document.getElementById('copyTrackingScriptBtn');
+    if (copyTrackingScriptBtn) {
+        copyTrackingScriptBtn.addEventListener('click', async () => {
+            const value = document.getElementById('trackingScriptValue')?.textContent || '';
+            try {
+                await navigator.clipboard.writeText(value);
+                showProfileMessage('Tracking script copied.', 'success');
+            } catch (_) {
+                showProfileMessage('Unable to copy tracking script.', 'error');
+            }
+        });
+    }
 }
 
 function updateUserProfile(user) {
@@ -601,6 +865,7 @@ async function loadDashboardData() {
             updateDashboardStats(data);
             await loadDashboardCharts();
             await loadDashboardTrustLinkage();
+            await loadDashboardIntelligence();
         }
     } catch (error) {
         console.error('Error loading dashboard data:', error);
@@ -1588,6 +1853,82 @@ function updateDashboardStats(data) {
     }
 }
 
+function renderSimpleEventList(containerId, rows) {
+    const list = document.getElementById(containerId);
+    if (!list) return;
+    const items = Array.isArray(rows) ? rows : [];
+    if (!items.length) {
+        list.innerHTML = '<li>No data yet.</li>';
+        applyScrollReveal(list);
+        return;
+    }
+    list.innerHTML = items.map((row) => `
+        <li>
+            <strong>${escapeHtml(row.event_type || '-')}</strong><br/>
+            customer: ${escapeHtml(row.customer_id || '-')} | source: ${escapeHtml(row.source || '-')}<br/>
+            ${escapeHtml(fmtTs(row.timestamp))}
+        </li>
+    `).join('');
+    applyScrollReveal(list);
+}
+
+function updateDashboardIntelligence(data) {
+    const eventActivity = data?.event_activity || {};
+    const customerIntel = data?.customer_intelligence || {};
+    const timeline = data?.timeline_activity || {};
+    const integration = data?.integration_status || {};
+
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = String(value ?? '-');
+    };
+
+    setText('eventsTodayValue', eventActivity.events_today || 0);
+    setText('eventsLast24hValue', eventActivity.events_last_24h || 0);
+
+    const bySource = eventActivity.events_by_source || {};
+    const bySourceText = Object.keys(bySource).length
+        ? Object.entries(bySource).map(([k, v]) => `${k}: ${v}`).join(' | ')
+        : '-';
+    setText('eventsBySourceValue', bySourceText);
+    setText(
+        'integrationStatusValue',
+        `Shopify: ${integration.shopify_connected ? 'on' : 'off'} | Webhook: ${integration.webhook_active ? 'on' : 'off'} | Pixel: ${integration.pixel_active ? 'on' : 'off'}`
+    );
+
+    setText('intelTotalCustomers', customerIntel.total_customers || 0);
+    setText('intelHighTrustCustomers', customerIntel.high_trust_customers || 0);
+    setText('intelLowTrustCustomers', customerIntel.low_trust_customers || 0);
+    setText('intelFraudRiskCustomers', customerIntel.fraud_risk_customers || 0);
+
+    renderSimpleEventList('latestEventsList', timeline.latest_events || []);
+    renderSimpleEventList('latestPurchasesList', timeline.latest_purchases || []);
+    renderSimpleEventList('latestCancellationsList', timeline.latest_cancellations || []);
+}
+
+async function loadLiveEventFeed() {
+    const response = await fetch('/api/dashboard/live-event-feed?limit=20', {
+        headers: authJsonHeaders(),
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to load live feed (${response.status})`);
+    }
+    const rows = await response.json();
+    renderSimpleEventList('liveEventFeedList', rows);
+}
+
+async function loadDashboardIntelligence() {
+    const response = await fetch('/api/dashboard/event-intelligence', {
+        headers: authJsonHeaders(),
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to load event intelligence (${response.status})`);
+    }
+    const data = await response.json();
+    updateDashboardIntelligence(data);
+    await loadLiveEventFeed();
+}
+
 async function loadDashboardCharts() {
     const token = getAuthToken();
     if (!token || typeof Chart === 'undefined') return;
@@ -1919,6 +2260,7 @@ function applySectionFromHash() {
 }
 window.addEventListener('DOMContentLoaded', () => {
     if (!enforceDashboardAuth()) return;
+    applySectionTheme('dashboard');
 
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     const sidebar = document.querySelector('.sidebar');
@@ -1984,6 +2326,7 @@ window.addEventListener('DOMContentLoaded', () => {
     let initialSection = route.section || 'dashboard';
 
     switchDashboardSection(initialSection);
+    applyScrollReveal(document);
     window.addEventListener('hashchange', applySectionFromHash);
 
     if (initialSection === 'payment') {

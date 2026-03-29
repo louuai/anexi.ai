@@ -37,6 +37,13 @@
             min-height: 100vh;
         }
 
+        :root {
+            --dashboard-accent: #3b82f6;
+            --dashboard-accent-soft: rgba(59, 130, 246, 0.22);
+            --dashboard-accent-soft-2: rgba(59, 130, 246, 0.12);
+            --dashboard-accent-glow: rgba(59, 130, 246, 0.32);
+        }
+
         /* Sidebar */
         .sidebar {
             width: 280px;
@@ -195,9 +202,9 @@
         }
 
         .nav-item.active {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(124, 58, 237, 0.2));
-            color: var(--primary-light);
-            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.2);
+            background: linear-gradient(135deg, var(--dashboard-accent-soft), var(--dashboard-accent-soft-2));
+            color: var(--dashboard-accent);
+            box-shadow: 0 5px 15px var(--dashboard-accent-soft);
         }
 
         .sidebar-footer {
@@ -267,6 +274,7 @@
             margin-left: 280px;
             padding: 2rem;
             overflow-y: auto;
+            scroll-behavior: smooth;
             transition: var(--transition-smooth);
         }
 
@@ -276,7 +284,7 @@
 
         .dashboard-section.active {
             display: block;
-            animation: fadeInSection 0.25s ease-out;
+            animation: fadeInSection 0.32s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .section-placeholder {
@@ -499,12 +507,203 @@
             min-height: 1.2rem;
         }
 
+        .integration-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.8rem;
+            margin-top: 0.85rem;
+        }
+
+        .integration-card {
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 0.8rem;
+        }
+
+        .integration-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.6rem;
+        }
+
+        .integration-title {
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .integration-meta {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            line-height: 1.5;
+            margin-bottom: 0.55rem;
+        }
+
+        .integration-status-badge {
+            border-radius: 999px;
+            font-size: 0.72rem;
+            padding: 0.15rem 0.5rem;
+            border: 1px solid rgba(156, 163, 175, 0.4);
+            color: #d1d5db;
+            background: rgba(148, 163, 184, 0.09);
+        }
+
+        .integration-status-badge.connected {
+            border-color: rgba(34, 197, 94, 0.45);
+            color: #86efac;
+            background: rgba(34, 197, 94, 0.12);
+        }
+
+        .integration-status-badge.not-connected {
+            border-color: rgba(245, 158, 11, 0.35);
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.12);
+        }
+
+        .integration-actions {
+            display: flex;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+        }
+
+        .integration-inline-block {
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.8rem;
+            background: rgba(255, 255, 255, 0.05);
+            margin-top: 0.8rem;
+        }
+
+        .integration-inline-block .profile-form-grid {
+            margin-top: 0.65rem;
+        }
+
+        .dashboard-intel-shell {
+            margin-top: 1rem;
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 1.35rem;
+            box-shadow: var(--shadow-3d);
+            position: relative;
+            overflow: hidden;
+            animation: intelReveal 0.45s ease-out both;
+        }
+
+        .dashboard-intel-shell::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 12% 18%, var(--dashboard-accent-soft), transparent 42%),
+                radial-gradient(circle at 88% 14%, var(--dashboard-accent-soft-2), transparent 45%);
+            pointer-events: none;
+        }
+
+        .dashboard-intel-shell h3 {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 1rem;
+            font-size: 1.28rem;
+            color: var(--text-primary);
+        }
+
+        .dashboard-intel-grid {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.8rem;
+        }
+
+        .dashboard-intel-card {
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            background: linear-gradient(155deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+            backdrop-filter: blur(16px);
+            transition: var(--transition-smooth);
+        }
+
+        .dashboard-intel-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-3d);
+            border-color: var(--dashboard-accent-glow);
+        }
+
+        .dashboard-intel-card h4 {
+            margin: 0 0 0.45rem;
+            color: var(--text-primary);
+            font-size: 0.92rem;
+        }
+
+        .dashboard-intel-card .value {
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+        }
+
+        .event-list {
+            list-style: none;
+            padding: 0;
+            margin: 0.7rem 0 0;
+            display: grid;
+            gap: 0.55rem;
+        }
+
+        .event-list li {
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.65rem 0.78rem;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+            color: var(--text-secondary);
+            font-size: 0.83rem;
+            transition: var(--transition-smooth);
+        }
+
+        .event-list li:hover {
+            transform: translateX(3px);
+            border-color: var(--dashboard-accent-glow);
+        }
+
+        .reveal-item {
+            opacity: 0;
+            transform: translateY(14px) scale(0.99);
+            transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: opacity, transform;
+        }
+
+        .reveal-item.in-view {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        @keyframes intelReveal {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @media (max-width: 1024px) {
             .profile-shell {
                 grid-template-columns: 1fr;
             }
 
             .profile-form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .integration-grid,
+            .dashboard-intel-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -672,11 +871,13 @@
         @keyframes fadeInSection {
             from {
                 opacity: 0;
-                transform: translateY(8px);
+                transform: translateY(10px) scale(0.996);
+                filter: blur(2px);
             }
             to {
                 opacity: 1;
                 transform: translateY(0);
+                filter: blur(0);
             }
         }
 
@@ -694,11 +895,12 @@
         .dashboard-header h1 {
             font-size: 2.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, var(--text-primary), var(--aurora-blue));
+            background: linear-gradient(135deg, var(--text-primary), var(--dashboard-accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 0.5rem;
+            transition: var(--transition-smooth);
         }
 
         .header-subtitle {
@@ -1505,6 +1707,73 @@
                 </button>
             </div>
         </section>
+
+        <section class="dashboard-intel-shell">
+            <h3>Event Activity</h3>
+            <div class="dashboard-intel-grid">
+                <div class="dashboard-intel-card">
+                    <h4>Events Today</h4>
+                    <div class="value" id="eventsTodayValue">0</div>
+                </div>
+                <div class="dashboard-intel-card">
+                    <h4>Events Last 24h</h4>
+                    <div class="value" id="eventsLast24hValue">0</div>
+                </div>
+                <div class="dashboard-intel-card">
+                    <h4>By Source</h4>
+                    <div id="eventsBySourceValue">-</div>
+                </div>
+                <div class="dashboard-intel-card">
+                    <h4>Integrations</h4>
+                    <div id="integrationStatusValue">-</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-intel-shell">
+            <h3>Customer Intelligence</h3>
+            <div class="dashboard-intel-grid">
+                <div class="dashboard-intel-card">
+                    <h4>Total Customers</h4>
+                    <div class="value" id="intelTotalCustomers">0</div>
+                </div>
+                <div class="dashboard-intel-card">
+                    <h4>High Trust</h4>
+                    <div class="value" id="intelHighTrustCustomers">0</div>
+                </div>
+                <div class="dashboard-intel-card">
+                    <h4>Low Trust</h4>
+                    <div class="value" id="intelLowTrustCustomers">0</div>
+                </div>
+                <div class="dashboard-intel-card">
+                    <h4>Fraud Risk</h4>
+                    <div class="value" id="intelFraudRiskCustomers">0</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-intel-shell">
+            <h3>Timeline Activity</h3>
+            <div class="dashboard-intel-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
+                <div class="dashboard-intel-card">
+                    <h4>Latest Events</h4>
+                    <ul class="event-list" id="latestEventsList"></ul>
+                </div>
+                <div class="dashboard-intel-card">
+                    <h4>Latest Purchases</h4>
+                    <ul class="event-list" id="latestPurchasesList"></ul>
+                </div>
+                <div class="dashboard-intel-card">
+                    <h4>Latest Cancellations</h4>
+                    <ul class="event-list" id="latestCancellationsList"></ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-intel-shell">
+            <h3>Live Event Feed</h3>
+            <ul class="event-list" id="liveEventFeedList"></ul>
+        </section>
         </section>
 
         <section class="dashboard-section" id="section-orders">
@@ -1522,6 +1791,7 @@
                     <button class="profile-nav-item" type="button" data-profile-tab="security">Security Settings</button>
                     <button class="profile-nav-item" type="button" data-profile-tab="notifications">Notification Settings</button>
                     <button class="profile-nav-item" type="button" data-profile-tab="system">System Settings</button>
+                    <button class="profile-nav-item" type="button" data-profile-tab="integrations">Integrations</button>
                 </aside>
 
                 <div class="profile-content">
@@ -1637,6 +1907,57 @@
                                 <button type="submit" class="profile-btn primary">Save System Settings</button>
                             </div>
                         </form>
+                    </div>
+
+                    <div class="profile-panel" id="profile-tab-integrations">
+                        <h3>Integrations</h3>
+                        <p>Connect your commerce data sources and monitor ingestion status.</p>
+                        <div id="integrationsGrid" class="integration-grid"></div>
+
+                        <div class="integration-inline-block">
+                            <h4 style="color:var(--text-primary);margin:0 0 .4rem;">Shopify Connect</h4>
+                            <form id="shopifyConnectForm">
+                                <div class="profile-form-grid">
+                                    <div class="profile-field">
+                                        <label for="shopifyShopUrl">Shop URL</label>
+                                        <input id="shopifyShopUrl" type="url" placeholder="https://your-shop.myshopify.com" />
+                                    </div>
+                                    <div class="profile-field">
+                                        <label for="shopifyApiKey">API Key</label>
+                                        <input id="shopifyApiKey" type="text" placeholder="shpat_..." />
+                                    </div>
+                                    <div class="profile-field full">
+                                        <label for="shopifyWebhookSecret">Webhook Secret</label>
+                                        <input id="shopifyWebhookSecret" type="text" placeholder="Webhook secret" />
+                                    </div>
+                                </div>
+                                <div class="profile-actions">
+                                    <button type="submit" class="profile-btn primary">Connect Shopify</button>
+                                </div>
+                            </form>
+                            <div class="integration-meta" id="shopifyConnectMeta">Store not connected.</div>
+                        </div>
+
+                        <div class="integration-inline-block">
+                            <h4 style="color:var(--text-primary);margin:0 0 .4rem;">Webhook Connect</h4>
+                            <div class="integration-meta">Webhook URL: <span id="webhookUrlValue">https://api.anexi.ai/events/webhook</span></div>
+                            <div class="integration-meta">Webhook Secret: <span id="webhookSecretValue">-</span></div>
+                            <div class="integration-actions">
+                                <button type="button" class="profile-btn" id="copyWebhookUrlBtn">Copy URL</button>
+                                <button type="button" class="profile-btn primary" id="connectWebhookBtn">Activate Webhook</button>
+                            </div>
+                        </div>
+
+                        <div class="integration-inline-block">
+                            <h4 style="color:var(--text-primary);margin:0 0 .4rem;">Tracking Script</h4>
+                            <div class="integration-meta">Install script:</div>
+                            <pre id="trackingScriptValue" style="white-space:pre-wrap;word-break:break-all;border:1px solid var(--glass-border);padding:.55rem;border-radius:10px;background:rgba(255,255,255,.04);color:var(--text-primary);">&lt;script src="https://cdn.anexi.ai/pixel.js"&gt;&lt;/script&gt;</pre>
+                            <div class="integration-meta" id="trackingStatusMeta">Pixel status: inactive</div>
+                            <div class="integration-actions">
+                                <button type="button" class="profile-btn" id="copyTrackingScriptBtn">Copy Script</button>
+                                <button type="button" class="profile-btn primary" id="connectTrackingBtn">Activate Pixel</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="profile-message" id="profileMessage"></div>
                 </div>

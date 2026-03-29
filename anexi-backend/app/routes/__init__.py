@@ -1,3 +1,14 @@
-from . import auth, orders, boutiques, dashboard, trust, payments, admin
+from . import auth, orders, boutiques, dashboard, trust, payments, admin, events, timeline, trust_engine
 
-__all__ = ["auth", "orders", "boutiques", "dashboard", "trust", "payments", "admin"]
+__all__ = [
+    "auth",
+    "orders",
+    "boutiques",
+    "dashboard",
+    "trust",
+    "payments",
+    "admin",
+    "events",
+    "timeline",
+    "trust_engine",
+]

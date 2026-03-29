@@ -130,6 +130,87 @@
       font-weight: 700;
     }
 
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+
+    .lang-switch {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-size: 1.1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .lang-switch:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+
+    .lang-menu {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      min-width: 190px;
+      max-height: 220px;
+      overflow-y: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(10, 14, 24, 0.58);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+      padding: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-6px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      z-index: 50;
+    }
+
+    .lang-menu.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .lang-option {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 11px;
+      font-size: 0.93rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .lang-option:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    .lang-option.active {
+      background: rgba(37, 99, 235, 0.3);
+      border-color: rgba(37, 99, 235, 0.65);
+    }
+
     .btn {
       display: inline-flex;
       align-items: center;
@@ -949,6 +1030,11 @@
         display: none;
       }
 
+      .lang-menu {
+        right: -4px;
+        min-width: 170px;
+      }
+
       .hero {
         padding-top: calc(var(--nav-h) + 32px);
       }
@@ -984,13 +1070,21 @@
     <div class="container nav-wrap">
       <a href="#" class="brand"><img src="assets/anexi_logo_transparent.png" alt="Anexi.ai" class="brand-logo" /></a>
       <nav class="nav-links">
-        <a href="#integration">Integration</a>
-        <a href="#workflow">Workflow</a>
-        <a href="#features">Features</a>
-        <a href="#payment">Pricing</a>
-        <a href="#contact">Contact</a>
+        <a href="#integration" data-i18n="nav_integration">Integration</a>
+        <a href="#workflow" data-i18n="nav_workflow">Workflow</a>
+        <a href="#features" data-i18n="nav_features">Features</a>
+        <a href="#payment" data-i18n="nav_pricing">Pricing</a>
+        <a href="#contact" data-i18n="nav_contact">Contact</a>
       </nav>
-      <a href="signup.html" class="btn btn-primary btn-get-started">Get started</a>
+      <div class="nav-actions">
+        <button class="lang-switch" id="langSwitchBtn" type="button" aria-label="Change language">🌐</button>
+        <div class="lang-menu" id="langMenu" role="menu" aria-label="Language selector">
+          <button class="lang-option" type="button" data-lang="en">English <span>EN</span></button>
+          <button class="lang-option" type="button" data-lang="fr">Francais <span>FR</span></button>
+          <button class="lang-option" type="button" data-lang="tn">Tounsi <span>TN</span></button>
+        </div>
+        <a href="signup.html" class="btn btn-primary btn-get-started" data-i18n="nav_get_started">Get started</a>
+      </div>
     </div>
   </header>
 
@@ -1002,7 +1096,7 @@
       </video>
     </div>
     <div class="container hero-inner">
-      <span class="hero-label">AI INFRASTRUCTURE FOR ORDER TRUST</span>
+      <span class="hero-label" data-i18n="hero_label">AI INFRASTRUCTURE FOR ORDER TRUST</span>
       <h1 class="hero-title" id="heroTitle">
         <span class="word-mask"><span class="hero-word">Anexi</span></span>
         <span class="word-mask"><span class="hero-word"></span></span>  
@@ -1014,12 +1108,12 @@
         <span class="word-mask"><span class="hero-word">e-commerce</span></span>
         <span class="word-mask"><span class="hero-word">tunisien</span></span>
       </h1>
-      <p class="hero-subtitle" id="heroSubtitle">
+      <p class="hero-subtitle" id="heroSubtitle" data-i18n="hero_subtitle">
         Anexi.ai analyzes every incoming order, assigns a trust score, runs automated confirmation calls, and executes approve, flag, or reject decisions. Built for Facebook Ads sellers, dropshippers, Shopify and WooCommerce stores, and Cash-on-Delivery operations.
       </p>
       <div class="hero-actions" id="heroActions">
-        <a href="signup.html" class="btn btn-primary btn-get-started">Get started</a>
-        <a href="#integration" class="btn btn-ghost">Learn more -></a>
+        <a href="signup.html" class="btn btn-primary btn-get-started" data-i18n="hero_cta_start">Get started</a>
+        <a href="#integration" class="btn btn-ghost" data-i18n="hero_cta_learn">Learn more -></a>
       </div>
     </div>
   </section>
@@ -1029,17 +1123,17 @@
       <figure class="integration-media" id="integrationMedia">
         <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1400&q=80" alt="Team collaboration around analytics dashboard" />
         <figcaption class="floating-ui">
-          <strong>Risk-Aware Order Flow</strong>
-          <p>Prioritize trusted orders, block high-risk losses</p>
+          <strong data-i18n="integration_floating_title">Risk-Aware Order Flow</strong>
+          <p data-i18n="integration_floating_subtitle">Prioritize trusted orders, block high-risk losses</p>
         </figcaption>
       </figure>
       <div class="integration-text" id="integrationText">
-        <p class="eyebrow">THE CORE E-COMMERCE PROBLEM</p>
-        <h2 class="section-title">Fake orders and no-shows silently destroy margin</h2>
-        <p>
+        <p class="eyebrow" data-i18n="integration_eyebrow">THE CORE E-COMMERCE PROBLEM</p>
+        <h2 class="section-title" data-i18n="integration_title">Fake orders and no-shows silently destroy margin</h2>
+        <p data-i18n="integration_desc">
           Most stores can generate demand, but many cannot reliably verify intent. Invalid numbers, unreachable buyers, and low-intent Cash-on-Delivery orders create return costs, wasted call center time, and ad spend leakage. Anexi connects to Shopify, WooCommerce, Meta Ads, and your existing tools to turn raw orders into verified, prioritized fulfillment decisions.
         </p>
-        <a href="#" class="btn btn-primary">Start now</a>
+        <a href="#" class="btn btn-primary" data-i18n="integration_cta">Start now</a>
       </div>
     </div>
   </section>
@@ -1047,25 +1141,25 @@
   <section class="section sticky-section" id="workflow">
     <div class="container">
       <div class="sticky-intro">
-        <p class="eyebrow">HOW ANEXI WORKS</p>
-        <h2 class="section-title">From order capture to automated decisioning</h2>
+        <p class="eyebrow" data-i18n="workflow_eyebrow">HOW ANEXI WORKS</p>
+        <h2 class="section-title" data-i18n="workflow_title">From order capture to automated decisioning</h2>
       </div>
       <div class="sticky-stack">
         <article class="sticky-card">
-          <h3>1) AI Call Agent</h3>
-          <p>An intelligent voice agent calls new customers in seconds, confirms address and intent, detects hesitation signals, and logs structured call outcomes for every order.</p>
+          <h3 data-i18n="workflow_1_title">1) AI Call Agent</h3>
+          <p data-i18n="workflow_1_desc">An intelligent voice agent calls new customers in seconds, confirms address and intent, detects hesitation signals, and logs structured call outcomes for every order.</p>
         </article>
         <article class="sticky-card">
-          <h3>2) Behavioral Brain</h3>
-          <p>The risk engine scores each order using behavioral patterns, channel quality, phone consistency, and historical outcomes to estimate fulfillment reliability.</p>
+          <h3 data-i18n="workflow_2_title">2) Behavioral Brain</h3>
+          <p data-i18n="workflow_2_desc">The risk engine scores each order using behavioral patterns, channel quality, phone consistency, and historical outcomes to estimate fulfillment reliability.</p>
         </article>
         <article class="sticky-card">
-          <h3>3) Trust Layer</h3>
-          <p>A cross-order reputation system tracks buyer reliability over time, helping your team recognize trusted repeat customers and recurring risky profiles.</p>
+          <h3 data-i18n="workflow_3_title">3) Trust Layer</h3>
+          <p data-i18n="workflow_3_desc">A cross-order reputation system tracks buyer reliability over time, helping your team recognize trusted repeat customers and recurring risky profiles.</p>
         </article>
         <article class="sticky-card">
-          <h3>4) Smart Automation</h3>
-          <p>Decision policies convert scores and call outcomes into actions: auto-confirm low-risk orders, auto-flag edge cases for review, and auto-reject high-risk orders before shipment.</p>
+          <h3 data-i18n="workflow_4_title">4) Smart Automation</h3>
+          <p data-i18n="workflow_4_desc">Decision policies convert scores and call outcomes into actions: auto-confirm low-risk orders, auto-flag edge cases for review, and auto-reject high-risk orders before shipment.</p>
         </article>
       </div>
     </div>
@@ -1074,39 +1168,39 @@
   <section class="section feature-section" id="features">
     <div class="container">
       <div class="feature-head">
-        <p class="eyebrow">PLATFORM CAPABILITIES</p>
-        <h2 class="section-title">Built for high-volume, risk-sensitive commerce operations</h2>
+        <p class="eyebrow" data-i18n="features_eyebrow">PLATFORM CAPABILITIES</p>
+        <h2 class="section-title" data-i18n="features_title">Built for high-volume, risk-sensitive commerce operations</h2>
       </div>
       <div class="feature-grid">
         <article class="feature-card">
           <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M4 12h16M12 4v16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <h4>Order Intake Intelligence</h4>
-          <p>Every incoming order is enriched with channel context, contact quality, and verification status before any fulfillment cost is committed.</p>
+          <h4 data-i18n="feature_1_title">Order Intake Intelligence</h4>
+          <p data-i18n="feature_1_desc">Every incoming order is enriched with channel context, contact quality, and verification status before any fulfillment cost is committed.</p>
         </article>
         <article class="feature-card">
           <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <h4>No-Show Risk Prediction</h4>
-          <p>Behavioral signals and call outcomes identify probable no-shows early so teams can reduce failed delivery attempts and return logistics costs.</p>
+          <h4 data-i18n="feature_2_title">No-Show Risk Prediction</h4>
+          <p data-i18n="feature_2_desc">Behavioral signals and call outcomes identify probable no-shows early so teams can reduce failed delivery attempts and return logistics costs.</p>
         </article>
         <article class="feature-card">
           <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M4 17l5-5 4 4 7-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <h4>Customer Reputation Graph</h4>
-          <p>The Trust Layer builds longitudinal reliability profiles to distinguish trustworthy repeat buyers from patterns linked to fraud and fake orders.</p>
+          <h4 data-i18n="feature_3_title">Customer Reputation Graph</h4>
+          <p data-i18n="feature_3_desc">The Trust Layer builds longitudinal reliability profiles to distinguish trustworthy repeat buyers from patterns linked to fraud and fake orders.</p>
         </article>
         <article class="feature-card">
           <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <h4>Decision Audit Trail</h4>
-          <p>Each automated decision is recorded with reason codes and supporting data, giving operations and leadership teams full decision transparency.</p>
+          <h4 data-i18n="feature_4_title">Decision Audit Trail</h4>
+          <p data-i18n="feature_4_desc">Each automated decision is recorded with reason codes and supporting data, giving operations and leadership teams full decision transparency.</p>
         </article>
         <article class="feature-card">
           <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" stroke="currentColor" stroke-width="2"/></svg>
-          <h4>CRM and Call Center Compatible</h4>
-          <p>Anexi does not replace your CRM or agents. It sits upstream as a trust and decision infrastructure that tells your existing stack which orders deserve fulfillment effort.</p>
+          <h4 data-i18n="feature_5_title">CRM and Call Center Compatible</h4>
+          <p data-i18n="feature_5_desc">Anexi does not replace your CRM or agents. It sits upstream as a trust and decision infrastructure that tells your existing stack which orders deserve fulfillment effort.</p>
         </article>
         <article class="feature-card">
           <svg class="feature-icon" viewBox="0 0 24 24" fill="none"><path d="M3 7h18M6 3v8M18 3v8M5 13h14v8H5z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <h4>Operations and Finance Impact</h4>
-          <p>Track confirmation rate, accepted-risk mix, rejection savings, and post-shipment outcomes to improve unit economics by campaign and store.</p>
+          <h4 data-i18n="feature_6_title">Operations and Finance Impact</h4>
+          <p data-i18n="feature_6_desc">Track confirmation rate, accepted-risk mix, rejection savings, and post-shipment outcomes to improve unit economics by campaign and store.</p>
         </article>
       </div>
     </div>
@@ -1115,22 +1209,22 @@
   <section class="section payment-section" id="security">
     <div class="container">
       <div class="payment-head">
-        <p class="eyebrow">TRUST, SECURITY, AND CONTROL</p>
-        <h2 class="section-title">Enterprise-grade safeguards for order and customer data</h2>
-        <p>Anexi is designed for operational reliability: role-based access, protected API connectivity, controlled automation rules, and full traceability for each risk decision. Teams can review why an order was approved, flagged, or rejected and continuously tune policies with confidence.</p>
+        <p class="eyebrow" data-i18n="security_eyebrow">TRUST, SECURITY, AND CONTROL</p>
+        <h2 class="section-title" data-i18n="security_title">Enterprise-grade safeguards for order and customer data</h2>
+        <p data-i18n="security_desc">Anexi is designed for operational reliability: role-based access, protected API connectivity, controlled automation rules, and full traceability for each risk decision. Teams can review why an order was approved, flagged, or rejected and continuously tune policies with confidence.</p>
       </div>
       <div class="feature-grid">
         <article class="feature-card">
-          <h4>Secure Integrations</h4>
-          <p>Token-based connectors and scoped permissions keep commerce and ad platform access limited to required workflows.</p>
+          <h4 data-i18n="security_1_title">Secure Integrations</h4>
+          <p data-i18n="security_1_desc">Token-based connectors and scoped permissions keep commerce and ad platform access limited to required workflows.</p>
         </article>
         <article class="feature-card">
-          <h4>Policy Governance</h4>
-          <p>Approval thresholds, exception queues, and operator overrides let you automate aggressively without losing human control.</p>
+          <h4 data-i18n="security_2_title">Policy Governance</h4>
+          <p data-i18n="security_2_desc">Approval thresholds, exception queues, and operator overrides let you automate aggressively without losing human control.</p>
         </article>
         <article class="feature-card">
-          <h4>Actionable Transparency</h4>
-          <p>Every score and action is linked to explicit signals so teams can audit results, explain outcomes, and improve models over time.</p>
+          <h4 data-i18n="security_3_title">Actionable Transparency</h4>
+          <p data-i18n="security_3_desc">Every score and action is linked to explicit signals so teams can audit results, explain outcomes, and improve models over time.</p>
         </article>
       </div>
     </div>
@@ -1138,9 +1232,9 @@
   <section class="section payment-section" id="payment">
     <div class="container">
       <div class="payment-head">
-        <p class="eyebrow">PAYMENT PLANS</p>
-        <h2 class="section-title">Choose the plan that fits your order volume and risk complexity</h2>
-        <p>Start with core verification flows, then scale into advanced risk policies, deeper automations, and multi-store decision governance as your operation grows.</p>
+        <p class="eyebrow" data-i18n="pricing_eyebrow">PAYMENT PLANS</p>
+        <h2 class="section-title" data-i18n="pricing_title">Choose the plan that fits your order volume and risk complexity</h2>
+        <p data-i18n="pricing_desc">Start with core verification flows, then scale into advanced risk policies, deeper automations, and multi-store decision governance as your operation grows.</p>
       </div>
       <div class="payment-grid">
         <div class="card card--starter">
@@ -1152,8 +1246,8 @@
             <div class="card__badge">Popular</div>
             <div class="card__image"></div>
             <div class="card__text">
-              <h4 class="card__title">Starter</h4>
-              <p class="card__description">Essentials AI pour lancer vos premieres automatisations e-commerce.</p>
+              <h4 class="card__title" data-i18n="plan_starter_title">Starter</h4>
+              <p class="card__description" data-i18n="plan_starter_desc">Essentials AI pour lancer vos premieres automatisations e-commerce.</p>
             </div>
             <div class="card__footer">
               <span class="card__price">$29/mo</span>
@@ -1174,8 +1268,8 @@
             <div class="card__badge">Best value</div>
             <div class="card__image"></div>
             <div class="card__text">
-              <h4 class="card__title">Growth</h4>
-              <p class="card__description">Pour les boutiques en croissance avec support et campagnes multicanales.</p>
+              <h4 class="card__title" data-i18n="plan_growth_title">Growth</h4>
+              <p class="card__description" data-i18n="plan_growth_desc">Pour les boutiques en croissance avec support et campagnes multicanales.</p>
             </div>
             <div class="card__footer">
               <span class="card__price">$79/mo</span>
@@ -1196,8 +1290,8 @@
             <div class="card__badge">Advanced</div>
             <div class="card__image"></div>
             <div class="card__text">
-              <h4 class="card__title">Scale</h4>
-              <p class="card__description">Stack avancee pour equipes operations, acquisition et support a fort volume.</p>
+              <h4 class="card__title" data-i18n="plan_scale_title">Scale</h4>
+              <p class="card__description" data-i18n="plan_scale_desc">Stack avancee pour equipes operations, acquisition et support a fort volume.</p>
             </div>
             <div class="card__footer">
               <span class="card__price">$149/mo</span>
@@ -1224,10 +1318,10 @@
           <span class="flip-word">decision-ready</span>
           <span class="flip-word">AI</span>
         </h2>
-        <p>Deploy Anexi.ai as your order trust infrastructure and give your operations team a clear system to confirm, score, and automate every incoming order.</p>
+        <p data-i18n="cta_desc">Deploy Anexi.ai as your order trust infrastructure and give your operations team a clear system to confirm, score, and automate every incoming order.</p>
         <div class="cta-actions">
-          <a href="signup.html" class="btn btn-primary">Start free trial</a>
-          <a href="signup.html" class="btn btn-ghost">Book a demo</a>
+          <a href="signup.html" class="btn btn-primary" data-i18n="cta_start_trial">Start free trial</a>
+          <a href="signup.html" class="btn btn-ghost" data-i18n="cta_book_demo">Book a demo</a>
         </div>
       </div>
     </div>
@@ -1237,26 +1331,26 @@
     <div class="container footer-grid">
       <div>
         <h5 class="brand"><img src="assets/anexi_logo_transparent.png" alt="Anexi.ai" class="brand-logo" /></h5>
-        <p>AI infrastructure for e-commerce teams that need trusted orders, lower logistics losses, and consistent decision quality at scale.</p>
+        <p data-i18n="footer_about">AI infrastructure for e-commerce teams that need trusted orders, lower logistics losses, and consistent decision quality at scale.</p>
       </div>
       <div>
-        <h5>Product</h5>
+        <h5 data-i18n="footer_product">Product</h5>
         <ul>
-          <li><a href="#">Integrations</a></li>
-          <li><a href="#">Automation</a></li>
-          <li><a href="#">Pricing</a></li>
+          <li><a href="#" data-i18n="footer_integrations">Integrations</a></li>
+          <li><a href="#" data-i18n="footer_automation">Automation</a></li>
+          <li><a href="#" data-i18n="footer_pricing">Pricing</a></li>
         </ul>
       </div>
       <div>
-        <h5>Company</h5>
+        <h5 data-i18n="footer_company">Company</h5>
         <ul>
-          <li><a href="#">About</a></li>
-          <li><a href="#">Careers</a></li>
-          <li><a href="#">Contact</a></li>
+          <li><a href="#" data-i18n="footer_about_link">About</a></li>
+          <li><a href="#" data-i18n="footer_careers">Careers</a></li>
+          <li><a href="#" data-i18n="footer_contact">Contact</a></li>
         </ul>
       </div>
       <div>
-        <h5>Social</h5>
+        <h5 data-i18n="footer_social">Social</h5>
         <div class="socials">
           <a href="#" aria-label="LinkedIn">in</a>
           <a href="#" aria-label="X">x</a>
@@ -1270,6 +1364,333 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
   <script>
+    function initAdminSecretTrigger() {
+      const logoLink = document.querySelector(".brand");
+      if (!logoLink) return;
+
+      const requiredClicks = 5;
+      const clickWindowMs = 4500;
+      let clickCount = 0;
+      let resetTimer = null;
+
+      logoLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        clickCount += 1;
+
+        if (resetTimer) clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => {
+          clickCount = 0;
+        }, clickWindowMs);
+
+        if (clickCount < requiredClicks) return;
+
+        clickCount = 0;
+        if (resetTimer) clearTimeout(resetTimer);
+
+        const password = window.prompt("Admin access - mot de passe:");
+        if (password === null) return;
+        if (password === "louai") {
+          window.location.href = "http://localhost:3000/dashboards/f/dfe30jyqgpog0c/anexi";
+          return;
+        }
+        window.alert("Mot de passe incorrect.");
+      });
+    }
+
+    initAdminSecretTrigger();
+
+    const I18N = {
+      en: {
+        nav_integration: "Integration",
+        nav_workflow: "Workflow",
+        nav_features: "Features",
+        nav_pricing: "Pricing",
+        nav_contact: "Contact",
+        nav_get_started: "Get started",
+        hero_label: "AI INFRASTRUCTURE FOR ORDER TRUST",
+        hero_words: ["Anexi", "is", "the", "optimization", "engine", "for", "e-commerce", "cashflow", "growth"],
+        hero_subtitle: "Anexi.ai analyzes every incoming order, assigns a trust score, runs automated confirmation calls, and executes approve, flag, or reject decisions. Built for Facebook Ads sellers, dropshippers, Shopify and WooCommerce stores, and Cash-on-Delivery operations.",
+        hero_cta_start: "Get started",
+        hero_cta_learn: "Learn more ->",
+        integration_floating_title: "Risk-Aware Order Flow",
+        integration_floating_subtitle: "Prioritize trusted orders, block high-risk losses",
+        integration_eyebrow: "THE CORE E-COMMERCE PROBLEM",
+        integration_title: "Fake orders and no-shows silently destroy margin",
+        integration_desc: "Most stores can generate demand, but many cannot reliably verify intent. Invalid numbers, unreachable buyers, and low-intent Cash-on-Delivery orders create return costs, wasted call center time, and ad spend leakage. Anexi connects to Shopify, WooCommerce, Meta Ads, and your existing tools to turn raw orders into verified, prioritized fulfillment decisions.",
+        integration_cta: "Start now",
+        workflow_eyebrow: "HOW ANEXI WORKS",
+        workflow_title: "From order capture to automated decisioning",
+        workflow_1_title: "1) AI Call Agent",
+        workflow_1_desc: "An intelligent voice agent calls new customers in seconds, confirms address and intent, detects hesitation signals, and logs structured call outcomes for every order.",
+        workflow_2_title: "2) Behavioral Brain",
+        workflow_2_desc: "The risk engine scores each order using behavioral patterns, channel quality, phone consistency, and historical outcomes to estimate fulfillment reliability.",
+        workflow_3_title: "3) Trust Layer",
+        workflow_3_desc: "A cross-order reputation system tracks buyer reliability over time, helping your team recognize trusted repeat customers and recurring risky profiles.",
+        workflow_4_title: "4) Smart Automation",
+        workflow_4_desc: "Decision policies convert scores and call outcomes into actions: auto-confirm low-risk orders, auto-flag edge cases for review, and auto-reject high-risk orders before shipment.",
+        features_eyebrow: "PLATFORM CAPABILITIES",
+        features_title: "Built for high-volume, risk-sensitive commerce operations",
+        feature_1_title: "Order Intake Intelligence",
+        feature_1_desc: "Every incoming order is enriched with channel context, contact quality, and verification status before any fulfillment cost is committed.",
+        feature_2_title: "No-Show Risk Prediction",
+        feature_2_desc: "Behavioral signals and call outcomes identify probable no-shows early so teams can reduce failed delivery attempts and return logistics costs.",
+        feature_3_title: "Customer Reputation Graph",
+        feature_3_desc: "The Trust Layer builds longitudinal reliability profiles to distinguish trustworthy repeat buyers from patterns linked to fraud and fake orders.",
+        feature_4_title: "Decision Audit Trail",
+        feature_4_desc: "Each automated decision is recorded with reason codes and supporting data, giving operations and leadership teams full decision transparency.",
+        feature_5_title: "CRM and Call Center Compatible",
+        feature_5_desc: "Anexi does not replace your CRM or agents. It sits upstream as a trust and decision infrastructure that tells your existing stack which orders deserve fulfillment effort.",
+        feature_6_title: "Operations and Finance Impact",
+        feature_6_desc: "Track confirmation rate, accepted-risk mix, rejection savings, and post-shipment outcomes to improve unit economics by campaign and store.",
+        security_eyebrow: "TRUST, SECURITY, AND CONTROL",
+        security_title: "Enterprise-grade safeguards for order and customer data",
+        security_desc: "Anexi is designed for operational reliability: role-based access, protected API connectivity, controlled automation rules, and full traceability for each risk decision. Teams can review why an order was approved, flagged, or rejected and continuously tune policies with confidence.",
+        security_1_title: "Secure Integrations",
+        security_1_desc: "Token-based connectors and scoped permissions keep commerce and ad platform access limited to required workflows.",
+        security_2_title: "Policy Governance",
+        security_2_desc: "Approval thresholds, exception queues, and operator overrides let you automate aggressively without losing human control.",
+        security_3_title: "Actionable Transparency",
+        security_3_desc: "Every score and action is linked to explicit signals so teams can audit results, explain outcomes, and improve models over time.",
+        pricing_eyebrow: "PAYMENT PLANS",
+        pricing_title: "Choose the plan that fits your order volume and risk complexity",
+        pricing_desc: "Start with core verification flows, then scale into advanced risk policies, deeper automations, and multi-store decision governance as your operation grows.",
+        plan_starter_title: "Starter",
+        plan_starter_desc: "AI essentials to launch your first e-commerce automations.",
+        plan_growth_title: "Growth",
+        plan_growth_desc: "For growing stores with multi-channel campaigns and support workflows.",
+        plan_scale_title: "Scale",
+        plan_scale_desc: "Advanced stack for high-volume operations, acquisition and support teams.",
+        cta_words: ["Protect", "every", "order", "with", "decision-ready", "AI"],
+        cta_desc: "Deploy Anexi.ai as your order trust infrastructure and give your operations team a clear system to confirm, score, and automate every incoming order.",
+        cta_start_trial: "Start free trial",
+        cta_book_demo: "Book a demo",
+        footer_about: "AI infrastructure for e-commerce teams that need trusted orders, lower logistics losses, and consistent decision quality at scale.",
+        footer_product: "Product",
+        footer_integrations: "Integrations",
+        footer_automation: "Automation",
+        footer_pricing: "Pricing",
+        footer_company: "Company",
+        footer_about_link: "About",
+        footer_careers: "Careers",
+        footer_contact: "Contact",
+        footer_social: "Social",
+      },
+      fr: {
+        nav_integration: "Integration",
+        nav_workflow: "Workflow",
+        nav_features: "Fonctionnalites",
+        nav_pricing: "Tarifs",
+        nav_contact: "Contact",
+        nav_get_started: "Commencer",
+        hero_label: "INFRASTRUCTURE IA POUR LA CONFIANCE DES COMMANDES",
+        hero_words: ["Anexi", "est", "le", "moteur", "d'optimisation", "du", "cashflow", "e-commerce", "tunisien"],
+        hero_subtitle: "Anexi.ai analyse chaque commande entrante, attribue un trust score, lance des appels de confirmation automatises et execute des decisions: approuver, signaler ou rejeter.",
+        hero_cta_start: "Commencer",
+        hero_cta_learn: "En savoir plus ->",
+        integration_floating_title: "Flux de commandes base sur le risque",
+        integration_floating_subtitle: "Priorisez les commandes fiables, bloquez les pertes a risque",
+        integration_eyebrow: "LE PROBLEME E-COMMERCE",
+        integration_title: "Les fausses commandes detruisent la marge en silence",
+        integration_desc: "Anexi connecte Shopify, WooCommerce, Meta Ads et vos outils internes pour transformer les commandes brutes en decisions de fulfillment verifiees et prioritaires.",
+        integration_cta: "Demarrer",
+        workflow_eyebrow: "COMMENT ANEXI FONCTIONNE",
+        workflow_title: "De la commande brute a la decision automatique",
+        workflow_1_title: "1) Agent d'appel IA",
+        workflow_1_desc: "Un agent vocal intelligent appelle les nouveaux clients, confirme l'adresse et l'intention, detecte l'hesitation et journalise les resultats.",
+        workflow_2_title: "2) Behavioral Brain",
+        workflow_2_desc: "Le moteur de risque score chaque commande avec les signaux comportementaux et l'historique pour estimer la fiabilite.",
+        workflow_3_title: "3) Trust Layer",
+        workflow_3_desc: "Le systeme de reputation suit la fiabilite des acheteurs dans le temps pour distinguer clients fiables et profils risqués.",
+        workflow_4_title: "4) Smart Automation",
+        workflow_4_desc: "Les politiques decisionnelles transforment les scores en actions: auto-confirm, auto-flag, auto-reject.",
+        features_eyebrow: "CAPACITES DE LA PLATEFORME",
+        features_title: "Concu pour des operations e-commerce a fort volume",
+        feature_1_title: "Intelligence d'entree commande",
+        feature_1_desc: "Chaque commande est enrichie avant toute depense logistique.",
+        feature_2_title: "Prediction no-show",
+        feature_2_desc: "Les signaux comportementaux anticipent les echecs de livraison.",
+        feature_3_title: "Graphe de reputation client",
+        feature_3_desc: "La Trust Layer construit des profils de fiabilite dans le temps.",
+        feature_4_title: "Journal de decision",
+        feature_4_desc: "Chaque decision est tracee avec motifs et signaux.",
+        feature_5_title: "Compatible CRM et call center",
+        feature_5_desc: "Anexi s'integre a votre stack existante sans la remplacer.",
+        feature_6_title: "Impact operations et finance",
+        feature_6_desc: "Suivez confirmation rate, rejets economises et outcomes post-livraison.",
+        security_eyebrow: "CONFIANCE, SECURITE ET CONTROLE",
+        security_title: "Protections de niveau enterprise",
+        security_desc: "Anexi apporte gouvernance, securite d'acces, et tracabilite complete des decisions risque.",
+        security_1_title: "Integrations securisees",
+        security_1_desc: "Connecteurs tokenises avec permissions limitees.",
+        security_2_title: "Gouvernance des politiques",
+        security_2_desc: "Seuils, exceptions et override humain pour garder le controle.",
+        security_3_title: "Transparence exploitable",
+        security_3_desc: "Chaque score est relie a des signaux explicites.",
+        pricing_eyebrow: "PLANS TARIFAIRES",
+        pricing_title: "Choisissez le plan adapte a votre volume",
+        pricing_desc: "Commencez simple puis evoluez vers des automatisations avancees.",
+        plan_starter_title: "Starter",
+        plan_starter_desc: "Essentiels IA pour vos premieres automatisations e-commerce.",
+        plan_growth_title: "Growth",
+        plan_growth_desc: "Pour les boutiques en croissance et campagnes multicanales.",
+        plan_scale_title: "Scale",
+        plan_scale_desc: "Stack avancee pour operations a fort volume.",
+        cta_words: ["Protegez", "chaque", "commande", "avec", "une", "IA"],
+        cta_desc: "Deployez Anexi.ai comme infrastructure de confiance pour confirmer, scorer et automatiser chaque commande.",
+        cta_start_trial: "Demarrer l'essai",
+        cta_book_demo: "Reserver une demo",
+        footer_about: "Infrastructure IA pour des equipes e-commerce qui veulent des commandes fiables et des decisions coherentes a grande echelle.",
+        footer_product: "Produit",
+        footer_integrations: "Integrations",
+        footer_automation: "Automatisation",
+        footer_pricing: "Tarifs",
+        footer_company: "Entreprise",
+        footer_about_link: "A propos",
+        footer_careers: "Carrieres",
+        footer_contact: "Contact",
+        footer_social: "Social",
+      },
+      tn: {
+        nav_integration: "Integration",
+        nav_workflow: "Kifash tekhdem",
+        nav_features: "Mizet",
+        nav_pricing: "As3ar",
+        nav_contact: "Contact",
+        nav_get_started: "Ibda",
+        hero_label: "IA INFRASTRUCTURE L THI9ET EL COMMANDAT",
+        hero_words: ["Anexi", "hiya", "moteur", "ta7sin", "cashflow", "ta3", "e-commerce", "fi", "tounes"],
+        hero_subtitle: "Anexi.ai t7allel kol commande jdida, ta3tiha trust score, ta3mel appels confirmation automatique w ta5ou decision sra3: accepte, flag, wala reject.",
+        hero_cta_start: "Ibda",
+        hero_cta_learn: "A3ref aktar ->",
+        integration_floating_title: "Flux commande 3la 7asab risque",
+        integration_floating_subtitle: "Qaddem el commandat mli7in w sakkir el pertes risquee",
+        integration_eyebrow: "MOCHKLET E-COMMERCE EL KEBIRA",
+        integration_title: "Fake orders w no-show y9assou men margek b skout",
+        integration_desc: "Anexi yrabet m3a Shopify, WooCommerce, Meta Ads w tools mte3ek bch y7awel el commandes raw l decisions mo2akkda w mratba.",
+        integration_cta: "Ibda taw",
+        workflow_eyebrow: "KIFESH ANEXI TEKHDM",
+        workflow_title: "Men reception commande l decision automatique",
+        workflow_1_title: "1) Agent appel IA",
+        workflow_1_desc: "Agent sawti y3ayet lel client, yconfirmi l3onwen w niya, w ysajjel natija mratba.",
+        workflow_2_title: "2) Behavioral Brain",
+        workflow_2_desc: "Moteur risque yscore kol commande bel comportement wel historique.",
+        workflow_3_title: "3) Trust Layer",
+        workflow_3_desc: "Systeme reputation ytab3a reliability mta3 kol client 3al modda.",
+        workflow_4_title: "4) Smart Automation",
+        workflow_4_desc: "El system y7awel score l actions: auto-confirm, auto-flag, auto-reject.",
+        features_eyebrow: "9ODRET EL PLATFORM",
+        features_title: "Mabni lel operations e-commerce kbira",
+        feature_1_title: "Intelligence fi d5oul commande",
+        feature_1_desc: "Kol commande tetzid biha context 9bal ma tsir masrouf logistique.",
+        feature_2_title: "Prediction no-show",
+        feature_2_desc: "Signalet tawa9a3 el clients li ma ychdouch commande.",
+        feature_3_title: "Graph reputation client",
+        feature_3_desc: "Trust Layer tabni profil thi9a lel clients 3al wa9t.",
+        feature_4_title: "Trace ta3 decision",
+        feature_4_desc: "Kol decision masjla m3a sabab w signaux.",
+        feature_5_title: "Compatible m3a CRM w call center",
+        feature_5_desc: "Anexi ma tbadelch stack mte3ek, tekhdem fou9ha.",
+        feature_6_title: "Impact operation w finance",
+        feature_6_desc: "Taba3 confirmation rate, rejects saved, w natayej ba3d livraison.",
+        security_eyebrow: "THI9A, SECURITE, W CONTROLE",
+        security_title: "7imaya enterprise lel data",
+        security_desc: "Anexi ta3tik access control, governance, w traceability kamla lel decisions.",
+        security_1_title: "Integrations mahmiyin",
+        security_1_desc: "Tokens w permissions m7adddin hasb el besion.",
+        security_2_title: "Gouvernance policy",
+        security_2_desc: "Thresholds w exceptions m3a dakhla insaniya waqt elli talzem.",
+        security_3_title: "Transparence claire",
+        security_3_desc: "Kol score mrbout b signaux ma3roufin.",
+        pricing_eyebrow: "PLANS",
+        pricing_title: "Ikhtar el plan elli ynaseb volume mte3ek",
+        pricing_desc: "Ibda bel basics w ba3d 3alli lel automatisation el advanced.",
+        plan_starter_title: "Starter",
+        plan_starter_desc: "Essentials IA bch tebda automate e-commerce.",
+        plan_growth_title: "Growth",
+        plan_growth_desc: "Mnasba lel boutiques elli 9a3da tkbar.",
+        plan_scale_title: "Scale",
+        plan_scale_desc: "Stack qwi lel teams w volume kbir.",
+        cta_words: ["7mi", "kol", "commande", "b", "IA", "thkiya"],
+        cta_desc: "7ott Anexi.ai infrastructure trust bch tconfirmi, tscorei w ta3mel automation lel commandat.",
+        cta_start_trial: "Ibda essai",
+        cta_book_demo: "Otlob demo",
+        footer_about: "Infrastructure IA lel teams e-commerce elli yhebou commandes fiable w decisions thabta.",
+        footer_product: "Produit",
+        footer_integrations: "Integrations",
+        footer_automation: "Automatisation",
+        footer_pricing: "As3ar",
+        footer_company: "Charika",
+        footer_about_link: "3lina",
+        footer_careers: "Khedma",
+        footer_contact: "Contact",
+        footer_social: "Social",
+      }
+    };
+
+    function applyLanguage(langCode) {
+      const lang = I18N[langCode] ? langCode : "en";
+      const dict = I18N[lang];
+      document.documentElement.lang = lang === "tn" ? "ar" : lang;
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (dict[key]) el.textContent = dict[key];
+      });
+
+      const heroWords = dict.hero_words || [];
+      document.querySelectorAll("#heroTitle .hero-word").forEach((el, idx) => {
+        el.textContent = heroWords[idx] || "";
+      });
+
+      const ctaWords = dict.cta_words || [];
+      document.querySelectorAll("#ctaTitle .flip-word").forEach((el, idx) => {
+        el.textContent = ctaWords[idx] || "";
+      });
+
+      document.title = lang === "fr"
+        ? "Anexi.ai | SaaS IA pour la croissance e-commerce"
+        : lang === "tn"
+          ? "Anexi.ai | SaaS IA lel e-commerce"
+          : "Anexi.ai | AI SaaS for E-commerce Growth";
+
+      localStorage.setItem("anexi_lang", lang);
+      document.querySelectorAll(".lang-option").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.lang === lang);
+      });
+    }
+
+    function initLanguageSelector() {
+      const switchBtn = document.getElementById("langSwitchBtn");
+      const menu = document.getElementById("langMenu");
+      if (!switchBtn || !menu) return;
+
+      const closeMenu = () => menu.classList.remove("open");
+      const toggleMenu = () => menu.classList.toggle("open");
+
+      switchBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleMenu();
+      });
+
+      document.querySelectorAll(".lang-option").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          applyLanguage(btn.dataset.lang || "en");
+          closeMenu();
+        });
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!menu.contains(e.target) && e.target !== switchBtn) closeMenu();
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeMenu();
+      });
+
+      applyLanguage(localStorage.getItem("anexi_lang") || "en");
+    }
+
+    initLanguageSelector();
+
     const heroVideo = document.getElementById("heroVideo");
     if (heroVideo) {
       const resumeHeroVideo = () => {

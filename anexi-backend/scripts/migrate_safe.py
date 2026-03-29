@@ -151,17 +151,18 @@ def ensure_schema_compat(engine):
                 """
             )
         )
-        conn.execute(
-            text(
-                """
-                UPDATE payments p
-                SET tenant_id = u.tenant_id
-                FROM users u
-                WHERE p.user_id = u.id
-                  AND p.tenant_id IS NULL
-                """
+        if _has_table(insp, "payments"):
+            conn.execute(
+                text(
+                    """
+                    UPDATE payments p
+                    SET tenant_id = u.tenant_id
+                    FROM users u
+                    WHERE p.user_id = u.id
+                      AND p.tenant_id IS NULL
+                    """
+                )
             )
-        )
 
         insp = inspect(conn)
         for table in TENANT_TABLES:

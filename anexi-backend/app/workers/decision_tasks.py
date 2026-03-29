@@ -6,11 +6,20 @@ from app.workers.celery_app import celery_app
 from app.workers.dispatch import enqueue_task
 from app.workers.call_agent_tasks import run_call_agent_for_order
 
+# Mapping décision IA → statut commande
+_DECISION_TO_STATUS = {
+    "auto_confirm": "confirmed",
+    "reject": "rejected",
+    # "call_required" → reste "pending" jusqu'au résultat de l'appel
+}
+
 
 @celery_app.task(name="decision.process_order_decision")
 def process_order_decision(order_id: int):
     """
     Behavioral Brain async scoring for a new/updated order.
+    Calcule le trust score, persiste la décision IA, met à jour
+    order.status si la décision est tranchée (auto_confirm / reject).
     """
     db = SessionLocal()
     try:
@@ -20,6 +29,10 @@ def process_order_decision(order_id: int):
         tenant_id = int(order.tenant_id or 0)
         if tenant_id <= 0:
             return {"ok": False, "reason": "tenant_missing"}
+
+        # Ne retraiter que les commandes encore en attente
+        if order.status not in ("pending",):
+            return {"ok": False, "reason": "order_not_pending", "status": order.status}
 
         customer_orders = (
             db.query(Order)
@@ -55,11 +68,23 @@ def process_order_decision(order_id: int):
                 explanation=f"score={trust_score}, total_orders={total_orders}, confirmed={confirmed_orders}",
             )
         )
+
+        # Mettre à jour order.status immédiatement si la décision est tranchée
+        new_status = _DECISION_TO_STATUS.get(decision)
+        if new_status:
+            order.status = new_status
+
         db.commit()
 
         if decision == "call_required":
             enqueue_task(run_call_agent_for_order, order.id, "fr")
 
-        return {"ok": True, "order_id": order.id, "score": str(trust_score), "decision": decision}
+        return {
+            "ok": True,
+            "order_id": order.id,
+            "score": str(trust_score),
+            "decision": decision,
+            "order_status": order.status,
+        }
     finally:
         db.close()
